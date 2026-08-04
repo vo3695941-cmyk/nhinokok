@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HTML5 Doom Mobile - Split Code</title>
+    <style>
+        body { margin: 0; padding: 0; background: #111; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; width: 100vw; height: 100vh; font-family: sans-serif; overflow: hidden; touch-action: none; }
+        canvas { background: #000; width: 100vw; max-height: 45vh; aspect-ratio: 16/10; object-fit: contain; border-bottom: 4px solid #333; }
+        .controller-area { display: flex; flex-direction: row; justify-content: space-around; align-items: center; width: 100vw; flex-grow: 1; padding: 10px 0; background: #050505; }
+        .move-controls { display: grid; grid-template-columns: repeat(3, 52px); grid-template-rows: repeat(2, 52px); gap: 6px; }
+        .action-controls { display: flex; flex-direction: row; align-items: center; gap: 12px; }
+        .rotate-group { display: flex; flex-direction: column; gap: 6px; }
+        .btn { background: #222; color: #fff; border: 2px solid #555; border-radius: 12px; font-size: 18px; font-weight: bold; display: flex; justify-content: center; align-items: center; user-select: none; -webkit-user-select: none; width: 52px; height: 52px; }
+        .btn:active { background: #800; border-color: #f00; }
+        .btn-fire { background: #aa0000; width: 65px; height: 65px; border-radius: 50%; font-size: 15px; border-color: #ff3333; }
+        .btn-fire:active { background: #ff0000; }
+        .empty { visibility: hidden; width: 52px; height: 52px; }
+    </style>
+</head>
+<body>
+
+    <!-- MÀN HÌNH GAME -->
+    <canvas id="gameCanvas" width="320" height="200"></canvas>
+
+    <!-- KHU VỰC ĐIỀU KHIỂN DƯỚI -->
+    <div class="controller-area">
+        <div class="move-controls">
+            <div class="empty"></div>
+            <div class="btn" id="btnUp">▲</div>
+            <div class="empty"></div>
+            <div class="btn" id="btnLeft">◀</div>
+            <div class="btn" id="btnDown">▼</div>
+            <div class="btn" id="btnRight">▶</div>
+        </div>
+
+        <div class="action-controls">
+            <div class="rotate-group">
+                <div class="btn" id="btnLookLeft">↺</div>
+                <div class="btn" id="btnLookRight">↻</div>
+            </div>
+            <div class="btn btn-fire" id="btnFire">FIRE</div>
+        </div>
+    </div>
+
+    <!-- Kết nối link đến file logic script.js -->
+    <script src="script.js"></script>
+</body>
+</html>
