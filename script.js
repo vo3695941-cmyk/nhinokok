@@ -1,10 +1,10 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-// --- HỆ THỐNG MÀN CHƠI (LEVELS) ---
 let currentLevel = 1;
 const maxLevels = 3;
 
+// Định nghĩa 3 màn chơi với độ khó tăng dần
 const levels = {
     1: {
         mapStr: "11111111" + "10000001" + "10000001" + "10000001" + "10000001" + "11111111",
@@ -59,7 +59,6 @@ function getMapCell(x, y) {
 function drawScreen() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Vẽ bầu trời và mặt đất
     ctx.fillStyle = "#1a1a1a"; ctx.fillRect(0, 0, 320, 100);
     ctx.fillStyle = "#333333"; ctx.fillRect(0, 100, 320, 100);
 
@@ -67,7 +66,6 @@ function drawScreen() {
     const rayStep = player.fov / numRays;
     let startAngle = player.angle - player.fov / 2;
 
-    // 1. Quét tia dựng tường 3D
     for (let i = 0; i < numRays; i++) {
         let currentAngle = startAngle + i * rayStep;
         let distance = 0;
@@ -90,7 +88,6 @@ function drawScreen() {
         ctx.fillRect(i, 100 - wallHeight / 2, 1, wallHeight);
     }
 
-    // 2. Dựng hình Quái vật 2.5D
     if (monster.alive && !gameWon) {
         let dx = monster.x - player.x;
         let dy = monster.y - player.y;
@@ -125,7 +122,6 @@ function drawScreen() {
         }
     }
 
-    // 3. Súng Shotgun và hiệu ứng bắn
     ctx.save();
     if (isFiring && !gameWon && playerHealth > 0) {
         ctx.fillStyle = "#ffcc00";
@@ -141,7 +137,6 @@ function drawScreen() {
     ctx.fillStyle = "#222222"; ctx.fillRect(145, 150, 30, 50);
     ctx.restore();
 
-    // 4. HUD giao diện
     ctx.fillStyle = "#00ff00"; ctx.fillRect(159, 99, 2, 2);
     
     ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(10, 10, 110, 18);
