@@ -1,4 +1,3 @@
-/* Đảm bảo toàn bộ trang web vừa vặn màn hình dọc điện thoại */
 body { 
     margin: 0; 
     padding: 0; 
@@ -14,7 +13,6 @@ body {
     touch-action: none; 
 }
 
-/* Khung hình game Canvas ở nửa trên */
 canvas { 
     background: #000; 
     width: 100vw; 
@@ -24,7 +22,6 @@ canvas {
     border-bottom: 4px solid #333; 
 }
 
-/* Vùng chứa bảng điều khiển lớn ở nửa dưới */
 .controller-area { 
     display: flex; 
     flex-direction: row; 
@@ -37,7 +34,6 @@ canvas {
     box-sizing: border-box;
 }
 
-/* Cụm 4 nút di chuyển bên trái xếp thành hình chữ T ngược */
 .move-controls { 
     display: grid; 
     grid-template-columns: repeat(3, 55px); 
@@ -45,7 +41,6 @@ canvas {
     gap: 8px; 
 }
 
-/* Cụm nút xoay camera và nút bắn súng bên phải */
 .action-controls { 
     display: flex; 
     flex-direction: row; 
@@ -59,7 +54,6 @@ canvas {
     gap: 8px; 
 }
 
-/* Thiết kế nút bấm cảm ứng hình vuông bo góc màu xám cực đẹp */
 .btn { 
     background: #222; 
     color: #fff; 
@@ -77,13 +71,11 @@ canvas {
     box-sizing: border-box;
 }
 
-/* Hiệu ứng chớp đỏ khi ngón tay chạm giữ nút */
 .btn:active { 
     background: #800; 
     border-color: #f00; 
 }
 
-/* Sửa lỗi nút bắn: Ép nút tròn to màu đỏ nổi bật kể cả khi bị dịch thành chữ NGỌN LỬA */
 .btn-fire, #btnFire { 
     background: #aa0000 !important; 
     width: 75px !important; 
@@ -102,7 +94,6 @@ canvas {
     background: #ff0000 !important; 
 }
 
-/* Ô trống định hình chữ T ngược */
 .empty { 
     visibility: hidden; 
     width: 55px; 
