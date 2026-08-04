@@ -1,28 +1,59 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-// Ghép chuỗi an toàn chống lỗi sao chép của bộ lọc văn bản
-let row1 = "11111111";
-let row2 = "10000001";
-let row3 = "10000001";
-let row4 = "10000001";
-let row5 = "10000001";
-let row6 = "11111111";
-const mapStr = row1 + row2 + row3 + row4 + row5 + row6;
+// --- HỆ THỐNG MÀN CHƠI (LEVELS) ---
+let currentLevel = 1;
+const maxLevels = 3;
+
+const levels = {
+    1: {
+        mapStr: "11111111" + "10000001" + "10000001" + "10000001" + "10000001" + "11111111",
+        playerStart: { x: 60, y: 60, angle: 0 },
+        monsterStart: { x: 180, y: 140 }
+    },
+    2: {
+        mapStr: "11111111" + "10000001" + "10111101" + "10000101" + "10000001" + "11111111",
+        playerStart: { x: 60, y: 60, angle: 0 },
+        monsterStart: { x: 240, y: 180 }
+    },
+    3: {
+        mapStr: "11111111" + "10001001" + "10101011" + "10100001" + "10111101" + "11111111",
+        playerStart: { x: 60, y: 60, angle: 0 },
+        monsterStart: { x: 260, y: 100 }
+    }
+};
 
 const mapWidth = 8, mapHeight = 6, mapScale = 40;
 
 let player = { x: 60, y: 60, angle: 0, fov: Math.PI / 3 };
-let isFiring = false;
-
 let playerHealth = 100;
-let monster = { x: 180, y: 140, alive: true, size: 25 };
+let isFiring = false;
+let monster = { x: 180, y: 140, alive: true };
 let depthBuffer = new Array(320);
+let gameWon = false;
+
+function loadLevel(lvl) {
+    if (lvl > maxLevels) {
+        gameWon = true;
+        return;
+    }
+    currentLevel = lvl;
+    player.x = levels[lvl].playerStart.x;
+    player.y = levels[lvl].playerStart.y;
+    player.angle = levels[lvl].playerStart.angle;
+    monster.x = levels[lvl].monsterStart.x;
+    monster.y = levels[lvl].monsterStart.y;
+    monster.alive = true;
+    playerHealth = 100;
+}
+
+loadLevel(1);
 
 function getMapCell(x, y) {
     if (x < 0 || x >= mapWidth || y < 0 || y >= mapHeight) return 1;
     let index = y * mapWidth + x;
-    return mapStr.charAt(index) === '1' ? 1 : 0;
+    let currentMapStr = levels[currentLevel].mapStr;
+    return currentMapStr.charAt(index) === '1' ? 1 : 0;
 }
 
 function drawScreen() {
@@ -60,7 +91,7 @@ function drawScreen() {
     }
 
     // 2. Dựng hình Quái vật 2.5D
-    if (monster.alive) {
+    if (monster.alive && !gameWon) {
         let dx = monster.x - player.x;
         let dy = monster.y - player.y;
         let distToMonster = Math.sqrt(dx * dx + dy * dy);
@@ -76,7 +107,10 @@ function drawScreen() {
             let screenXInt = Math.floor(monsterScreenX);
             if (screenXInt >= 0 && screenXInt < 320 && distToMonster < depthBuffer[screenXInt]) {
                 let colorGreen = Math.max(40, 180 - distToMonster * 0.5);
-                ctx.fillStyle = `rgb(0, ${colorGreen}, 0)`;
+                if (currentLevel === 1) ctx.fillStyle = `rgb(0, ${colorGreen}, 0)`;
+                else if (currentLevel === 2) ctx.fillStyle = `rgb(${colorGreen}, ${colorGreen}, 0)`;
+                else ctx.fillStyle = `rgb(${colorGreen}, 0, ${colorGreen})`;
+                
                 ctx.fillRect(monsterScreenX - monsterSubHeight/4, 100 - monsterSubHeight/2, monsterSubHeight/2, monsterSubHeight);
                 
                 ctx.fillStyle = "#ff0000";
@@ -86,14 +120,14 @@ function drawScreen() {
         }
 
         if (distToMonster < 16 && playerHealth > 0) {
-            playerHealth -= 0.6;
+            playerHealth -= (0.4 + currentLevel * 0.2);
             if (playerHealth < 0) playerHealth = 0;
         }
     }
 
     // 3. Súng Shotgun và hiệu ứng bắn
     ctx.save();
-    if (isFiring) {
+    if (isFiring && !gameWon && playerHealth > 0) {
         ctx.fillStyle = "#ffcc00";
         ctx.beginPath();
         ctx.moveTo(160, 110); ctx.lineTo(140, 80); ctx.lineTo(160, 60); ctx.lineTo(180, 80);
@@ -107,18 +141,28 @@ function drawScreen() {
     ctx.fillStyle = "#222222"; ctx.fillRect(145, 150, 30, 50);
     ctx.restore();
 
-    // 4. Thanh máu và tâm ngắm
+    // 4. HUD giao diện
     ctx.fillStyle = "#00ff00"; ctx.fillRect(159, 99, 2, 2);
     
     ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(10, 10, 110, 18);
     ctx.fillStyle = "#ff0000"; ctx.fillRect(15, 14, playerHealth, 10);
     ctx.fillStyle = "#fff"; ctx.font = "10px Arial"; ctx.fillText("HP: " + Math.floor(playerHealth) + "%", 20, 23);
 
+    ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(240, 10, 70, 18);
+    ctx.fillStyle = "#fff"; ctx.font = "10px Arial"; ctx.fillText("MAP: " + currentLevel + "/" + maxLevels, 248, 23);
+
     if (playerHealth <= 0) {
         ctx.fillStyle = "rgba(130,0,0,0.8)"; ctx.fillRect(0,0,320,200);
-        ctx.fillStyle = "#fff"; ctx.font = "20px Arial"; ctx.fillText("YOU DIED", 115, 105);
+        ctx.fillStyle = "#fff"; ctx.font = "20px Arial"; ctx.fillText("YOU DIED", 115, 95);
+        ctx.font = "10px Arial"; ctx.fillText("Click FIRE to restart Level", 105, 125);
+    } else if (gameWon) {
+        ctx.fillStyle = "rgba(0,100,0,0.8)"; ctx.fillRect(0,0,320,200);
+        ctx.fillStyle = "#fff"; ctx.font = "18px Arial"; ctx.fillText("VICTORY! ALL MAPS CLEARED", 35, 100);
+        ctx.font = "10px Arial"; ctx.fillText("Click FIRE to play again", 105, 130);
     } else if (!monster.alive) {
-        ctx.fillStyle = "#fff"; ctx.font = "12px Arial"; ctx.fillText("MONSTER KILLED! (FIRE to respawn)", 50, 180);
+        ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(40, 85, 240, 40);
+        ctx.fillStyle = "#fff"; ctx.font = "12px Arial"; ctx.fillText("MAP CLEARED!", 115, 100);
+        ctx.font = "10px Arial"; ctx.fillText("Click FIRE to advance to next Map", 85, 118);
     }
 }
 
@@ -126,7 +170,7 @@ const moveSpeed = 3;
 const rotateSpeed = 0.05;
 
 function checkCollisionAndMove(nextX, nextY) {
-    if (playerHealth <= 0) return;
+    if (playerHealth <= 0 || gameWon) return;
     let cellX = Math.floor(nextX / mapScale);
     let cellY = Math.floor(nextY / mapScale);
     if (getMapCell(cellX, cellY) === 0) { player.x = nextX; player.y = nextY; }
@@ -151,25 +195,19 @@ bindBtn("btnUp", moveForward);
 bindBtn("btnDown", moveBackward);
 bindBtn("btnLeft", strafeLeft);
 bindBtn("btnRight", strafeRight);
-bindBtn("btnLookLeft", () => { if(playerHealth > 0) player.angle -= rotateSpeed; });
-bindBtn("btnLookRight", () => { if(playerHealth > 0) player.angle += rotateSpeed; });
+bindBtn("btnLookLeft", () => { if(playerHealth > 0 && !gameWon) player.angle -= rotateSpeed; });
+bindBtn("btnLookRight", () => { if(playerHealth > 0 && !gameWon) player.angle += rotateSpeed; });
 
 const fireBtn = document.getElementById("btnFire");
 if (fireBtn) {
     const doFire = (e) => {
         e.preventDefault();
-        if (playerHealth <= 0) return;
-
-        if (!monster.alive) {
-            monster.x = 80 + Math.random() * 120;
-            monster.y = 80 + Math.random() * 100;
-            monster.alive = true;
-            return;
-        }
+        if (playerHealth <= 0) { loadLevel(currentLevel); return; }
+        if (gameWon) { gameWon = false; loadLevel(1); return; }
+        if (!monster.alive) { loadLevel(currentLevel + 1); return; }
 
         if (!isFiring) {
             isFiring = true;
-            
             let dx = monster.x - player.x;
             let dy = monster.y - player.y;
             let monsterAngle = Math.atan2(dy, dx) - player.angle;
@@ -179,7 +217,6 @@ if (fireBtn) {
             if (monster.alive && Math.abs(monsterAngle) < 0.15) {
                 monster.alive = false;
             }
-
             setTimeout(() => { isFiring = false; }, 150);
         }
     };
