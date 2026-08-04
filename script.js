@@ -2,27 +2,6 @@ const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
 let currentLevel = 1;
-const maxLevels = 3;
-
-// Định nghĩa 3 màn chơi với độ khó tăng dần
-const levels = {
-    1: {
-        mapStr: "11111111" + "10000001" + "10000001" + "10000001" + "10000001" + "11111111",
-        playerStart: { x: 60, y: 60, angle: 0 },
-        monsterStart: { x: 180, y: 140 }
-    },
-    2: {
-        mapStr: "11111111" + "10000001" + "10111101" + "10000101" + "10000001" + "11111111",
-        playerStart: { x: 60, y: 60, angle: 0 },
-        monsterStart: { x: 240, y: 180 }
-    },
-    3: {
-        mapStr: "11111111" + "10001001" + "10101011" + "10100001" + "10111101" + "11111111",
-        playerStart: { x: 60, y: 60, angle: 0 },
-        monsterStart: { x: 260, y: 100 }
-    }
-};
-
 const mapWidth = 8, mapHeight = 6, mapScale = 40;
 
 let player = { x: 60, y: 60, angle: 0, fov: Math.PI / 3 };
@@ -32,29 +11,76 @@ let monster = { x: 180, y: 140, alive: true };
 let depthBuffer = new Array(320);
 let gameWon = false;
 
+function getMapCell(x, y) {
+    if (x < 0 || x >= mapWidth || y < 0 || y >= mapHeight) return 1;
+    let index = y * mapWidth + x;
+    let currentMapStr = gameLevelsData[currentLevel].mapStr;
+    return currentMapStr.charAt(index) === '1' ? 1 : 0;
+}
+
+// Thuật toán kiểm tra spawn quái vật thông minh
+function isSafeSpawn(x, y) {
+    if (x < 20 || x > 300 || y < 20 || y > 220) return false;
+
+    const checkRadius = 15;
+    const pointsToCheck = [
+        {x: x, y: y},
+        {x: x + checkRadius, y: y},
+        {x: x - checkRadius, y: y},
+        {x: x, y: y + checkRadius},
+        {x: x, y: y - checkRadius}
+    ];
+    for (let p of pointsToCheck) {
+        let cellX = Math.floor(p.x / mapScale);
+        let cellY = Math.floor(p.y / mapScale);
+        if (getMapCell(cellX, cellY) === 1) return false;
+    }
+
+    let dx = x - player.x;
+    let dy = y - player.y;
+    let distanceToPlayer = Math.sqrt(dx * dx + dy * dy);
+    if (distanceToPlayer < 60) return false;
+
+    return true;
+}
+
+function spawnMonsterRandomly() {
+    let validSpawn = false;
+    let attempts = 0;
+    let randomX = 180;
+    let randomY = 140;
+
+    while (!validSpawn && attempts < 100) {
+        randomX = Math.floor(Math.random() * (320 - 40)) + 20;
+        randomY = Math.floor(Math.random() * (240 - 40)) + 20;
+
+        if (isSafeSpawn(randomX, randomY)) {
+            validSpawn = true;
+        }
+        attempts++;
+    }
+
+    monster.x = randomX;
+    monster.y = randomY;
+    monster.alive = true;
+}
+
 function loadLevel(lvl) {
     if (lvl > maxLevels) {
         gameWon = true;
         return;
     }
     currentLevel = lvl;
-    player.x = levels[lvl].playerStart.x;
-    player.y = levels[lvl].playerStart.y;
-    player.angle = levels[lvl].playerStart.angle;
-    monster.x = levels[lvl].monsterStart.x;
-    monster.y = levels[lvl].monsterStart.y;
-    monster.alive = true;
+    player.x = gameLevelsData[lvl].playerStart.x;
+    player.y = gameLevelsData[lvl].playerStart.y;
+    player.angle = gameLevelsData[lvl].playerStart.angle;
+    
+    spawnMonsterRandomly(); 
     playerHealth = 100;
 }
 
+// Khởi chạy level 1
 loadLevel(1);
-
-function getMapCell(x, y) {
-    if (x < 0 || x >= mapWidth || y < 0 || y >= mapHeight) return 1;
-    let index = y * mapWidth + x;
-    let currentMapStr = levels[currentLevel].mapStr;
-    return currentMapStr.charAt(index) === '1' ? 1 : 0;
-}
 
 function drawScreen() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
