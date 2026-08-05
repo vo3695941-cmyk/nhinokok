@@ -8,13 +8,15 @@ let monster = { x: 180, y: 140, alive: true }, depthBuffer = new Array(320);
 
 function getMapCell(x, y) {
     if (x < 0 || x >= mapWidth || y < 0 || y >= mapHeight) return 1;
-    if (!window.gameLevelsData) return 0;
+    if (!window.gameLevelsData || !window.gameLevelsData[currentLevel]) return 0;
     return window.gameLevelsData[currentLevel].mapStr.charAt(y * mapWidth + x) === '1' ? 1 : 0;
 }
 
 function loadLevel(lvl) {
     if (!window.gameLevelsData) { setTimeout(() => loadLevel(lvl), 100); return; }
-    if (lvl > (window.maxLevels || 5)) { gameWon = true; return; }
+    let maxLvl = window.maxLevels || 5;
+    if (lvl > maxLvl) { gameWon = true; return; }
+    
     currentLevel = lvl;
     player.x = window.gameLevelsData[lvl].playerStart.x;
     player.y = window.gameLevelsData[lvl].playerStart.y;
@@ -80,26 +82,23 @@ function drawScreen() {
 
     if (playerHealth <= 0) {
         ctx.fillStyle = "rgba(130,0,0,0.8)"; ctx.fillRect(0,0,320,200); ctx.fillStyle = "#fff"; ctx.font = "20px Arial"; ctx.fillText("YOU DIED", 115, 95);
-        document.getElementById("btnNext").innerText = "RETRY";
     } else if (gameWon) {
         ctx.fillStyle = "rgba(0,100,0,0.8)"; ctx.fillRect(0,0,320,200); ctx.fillStyle = "#fff"; ctx.font = "16px Arial"; ctx.fillText("VICTORY! ALL CLEARED", 55, 100);
-        document.getElementById("btnNext").innerText = "AGAIN";
     } else if (!monster.alive) {
         ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(40, 85, 240, 40); ctx.fillStyle = "#fff"; ctx.font = "12px Arial"; ctx.fillText("MAP CLEARED!", 115, 105);
-        document.getElementById("btnNext").innerText = "NEXT";
     }
 }
 
 let intervals = {};
 function bindBtn(id, action) {
     const el = document.getElementById(id); if (!el) return;
-    const start = (e) => { e.preventDefault(); if(!monster.alive) return; clearInterval(intervals[id]); intervals[id] = setInterval(action, 30); };
+    const start = (e) => { e.preventDefault(); clearInterval(intervals[id]); intervals[id] = setInterval(action, 30); };
     const stop = () => clearInterval(intervals[id]);
     el.addEventListener("touchstart", start); el.addEventListener("touchend", stop);
     el.addEventListener("mousedown", start); el.addEventListener("mouseup", stop); el.addEventListener("mouseleave", stop);
 }
 const move = (dx, dy) => {
-    if (playerHealth <= 0 || gameWon || !monster.alive) return;
+    if (playerHealth <= 0 || gameWon) return;
     let nx = player.x + dx, ny = player.y + dy;
     if (getMapCell(Math.floor(nx / 40), Math.floor(ny / 40)) === 0) { player.x = nx; player.y = ny; }
 };
@@ -107,8 +106,8 @@ bindBtn("btnUp", () => move(Math.cos(player.angle)*3, Math.sin(player.angle)*3))
 bindBtn("btnDown", () => move(-Math.cos(player.angle)*3, -Math.sin(player.angle)*3));
 bindBtn("btnLeft", () => move(Math.cos(player.angle-Math.PI/2)*3, Math.sin(player.angle-Math.PI/2)*3));
 bindBtn("btnRight", () => move(Math.cos(player.angle+Math.PI/2)*3, Math.sin(player.angle+Math.PI/2)*3));
-bindBtn("btnLookLeft", () => { if(monster.alive) player.angle -= 0.05; });
-bindBtn("btnLookRight", () => { if(monster.alive) player.angle += 0.05; });
+bindBtn("btnLookLeft", () => { if(playerHealth > 0 && !gameWon) player.angle -= 0.05; });
+bindBtn("btnLookRight", () => { if(playerHealth > 0 && !gameWon) player.angle += 0.05; });
 
 document.getElementById("btnFire").addEventListener("touchstart", (e) => {
     e.preventDefault(); if (playerHealth <= 0 || gameWon || !monster.alive || isFiring) return;
@@ -119,19 +118,21 @@ document.getElementById("btnFire").addEventListener("touchstart", (e) => {
     setTimeout(() => isFiring = false, 150);
 });
 
-// FIX CHÍNH: NÚT NEXT BÂY GIỜ BẤM LÀ QUA MÀN BẤT CHẤP QUÁI CÒN SỐNG HAY CHẾT
+// SỬA LỖI GỐC: NÚT NEXT KHÔNG BỊ CHẶN BỞI BẤT KỲ TRẠNG THÁI NÀO CỦA QUÁI VẬT
 document.getElementById("btnNext").addEventListener("touchstart", (e) => {
     e.preventDefault();
-    // Xóa toàn bộ lệnh nhấn giữ di chuyển ngầm trước khi đổi màn chơi mới
-    for (let k in intervals) clearInterval(intervals[k]);
+    // 1. Dọn dẹp sạch sẽ bộ đệm nút nhấn giữ để tránh xung đột
+    for (let k in intervals) { clearInterval(intervals[key => key]); clearInterval(intervals[k]); }
     
+    // 2. Xử lý đổi màn dứt khoát
     if (playerHealth <= 0) {
         loadLevel(currentLevel);
     } else if (gameWon) {
         gameWon = false;
         loadLevel(1);
     } else {
-        // Bấm qua luôn màn tiếp theo bất kể trạng thái của quái vật
+        // Ép quái cũ biến mất để giải phóng luồng logic cũ trước khi đổi Map
+        monster.alive = false; 
         loadLevel(currentLevel + 1);
     }
 });
