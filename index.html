@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html>
+<!-- Thêm thuộc tính translate="no" để cấm Chrome tự dịch làm lỗi game -->
+<html translate="no" class="notranslate">
 <head>
+    <meta name="google" content="notranslate">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>HTML5 Doom Mobile - Fixed GitHub Connection</title>
-    <!-- Nhúng file CSS giao diện nút bấm -->
+    <title>HTML5 Doom Mobile - Fixed Translation Error</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -31,8 +32,8 @@
         </div>
     </div>
 
-    <!-- SỬA LỖI KẾT NỐI: Thêm thuộc tính defer để ép trình duyệt nạp maps.js trước rồi mới chạy script.js -->
-    <script src="maps.js" defer></script>
-    <script src="script.js" defer></script>
+    <!-- Nhúng file dữ liệu bản đồ và logic xử lý game -->
+    <script src="maps.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
