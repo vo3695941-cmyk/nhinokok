@@ -1,65 +1,35 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-let currentLevel = 1;
-const mapWidth = 8, mapHeight = 6, mapScale = 40;
-
+let currentLevel = 1, mapWidth = 8, mapHeight = 6, mapScale = 40;
 let player = { x: 60, y: 60, angle: 0, fov: Math.PI / 3 };
-let playerHealth = 100;
-let isFiring = false;
-let monster = { x: 180, y: 140, alive: true };
-let depthBuffer = new Array(320);
-let gameWon = false;
+let playerHealth = 100, isFiring = false, gameWon = false;
+let monster = { x: 180, y: 140, alive: true }, depthBuffer = new Array(320);
 
 function getMapCell(x, y) {
     if (x < 0 || x >= mapWidth || y < 0 || y >= mapHeight) return 1;
-    if (!window.gameLevelsData || !window.gameLevelsData[currentLevel]) return 0;
-    let index = y * mapWidth + x;
-    let currentMapStr = window.gameLevelsData[currentLevel].mapStr;
-    return currentMapStr.charAt(index) === '1' ? 1 : 0;
-}
-
-function isSafeSpawn(x, y) {
-    if (x < 20 || x > 300 || y < 20 || y > 220) return false;
-    const checkRadius = 15;
-    const pointsToCheck = [
-        {x: x, y: y}, {x: x + checkRadius, y: y}, {x: x - checkRadius, y: y},
-        {x: x, y: y + checkRadius}, {x: x, y: y - checkRadius}
-    ];
-    for (let p of pointsToCheck) {
-        if (getMapCell(Math.floor(p.x / mapScale), Math.floor(p.y / mapScale)) === 1) return false;
-    }
-    if (Math.sqrt(Math.pow(x - player.x, 2) + Math.pow(y - player.y, 2)) < 60) return false;
-    return true;
-}
-
-function spawnMonsterRandomly() {
-    let validSpawn = false, attempts = 0, randomX = 180, randomY = 140;
-    while (!validSpawn && attempts < 100) {
-        randomX = Math.floor(Math.random() * 280) + 20;
-        randomY = Math.floor(Math.random() * 200) + 20;
-        if (isSafeSpawn(randomX, randomY)) validSpawn = true;
-        attempts++;
-    }
-    monster.x = randomX; monster.y = randomY; monster.alive = true;
+    if (!window.gameLevelsData) return 0;
+    return window.gameLevelsData[currentLevel].mapStr.charAt(y * mapWidth + x) === '1' ? 1 : 0;
 }
 
 function loadLevel(lvl) {
-    if (!window.gameLevelsData) {
-        setTimeout(() => { loadLevel(lvl); }, 100);
-        return;
-    }
-    
-    let maxLvl = window.maxLevels || 5;
-    if (lvl > maxLvl) { gameWon = true; return; }
+    if (!window.gameLevelsData) { setTimeout(() => loadLevel(lvl), 100); return; }
+    if (lvl > (window.maxLevels || 5)) { gameWon = true; return; }
     currentLevel = lvl;
     player.x = window.gameLevelsData[lvl].playerStart.x;
     player.y = window.gameLevelsData[lvl].playerStart.y;
     player.angle = window.gameLevelsData[lvl].playerStart.angle;
-    spawnMonsterRandomly(); 
-    playerHealth = 100;
+    
+    // Thuật toán tìm vị trí ngẫu nhiên không kẹt tường
+    let rx, ry, attempts = 0;
+    while (attempts++ < 50) {
+        rx = Math.floor(Math.random() * 260) + 30;
+        ry = Math.floor(Math.random() * 180) + 30;
+        if (getMapCell(Math.floor(rx/40), Math.floor(ry/40)) === 0 && Math.sqrt(Math.pow(rx-player.x,2)+Math.pow(ry-player.y,2)) > 60) break;
+    }
+    monster.x = rx; monster.y = ry; monster.alive = true; playerHealth = 100;
+    document.getElementById("btnNext").style.display = "none"; // Ẩn nút NEXT khi vào màn mới
 }
-
 loadLevel(1);
 
 function drawScreen() {
@@ -67,80 +37,65 @@ function drawScreen() {
     ctx.fillStyle = "#1a1a1a"; ctx.fillRect(0, 0, 320, 100);
     ctx.fillStyle = "#333333"; ctx.fillRect(0, 100, 320, 100);
 
-    const numRays = 320, rayStep = player.fov / numRays;
+    // 1. Raycasting dựng tường 3D
     let startAngle = player.angle - player.fov / 2;
-
-    for (let i = 0; i < numRays; i++) {
-        let currentAngle = startAngle + i * rayStep;
-        let distance = 0, hitWall = false;
-        while (!hitWall && distance < 300) {
-            distance += 1;
-            if (getMapCell(Math.floor((player.x + Math.cos(currentAngle) * distance) / mapScale), Math.floor((player.y + Math.sin(currentAngle) * distance) / mapScale)) === 1) hitWall = true;
+    for (let i = 0; i < 320; i++) {
+        let angle = startAngle + i * (player.fov / 320), dist = 0, hit = false;
+        while (!hit && dist < 300) {
+            dist += 1;
+            if (getMapCell(Math.floor((player.x + Math.cos(angle) * dist) / mapScale), Math.floor((player.y + Math.sin(angle) * dist) / mapScale)) === 1) hit = true;
         }
-        let correctedDist = distance * Math.cos(currentAngle - player.angle);
-        depthBuffer[i] = correctedDist;
-        let wallHeight = Math.min(160, (3200 / (correctedDist || 1)));
-        ctx.fillStyle = `rgb(${Math.max(30, 160 - distance * 0.6)}, 0, 0)`;
-        ctx.fillRect(i, 100 - wallHeight / 2, 1, wallHeight);
+        let corrDist = dist * Math.cos(angle - player.angle);
+        depthBuffer[i] = corrDist;
+        let h = Math.min(160, (3200 / (corrDist || 1)));
+        ctx.fillStyle = `rgb(${Math.max(30, 160 - dist * 0.6)}, 0, 0)`;
+        ctx.fillRect(i, 100 - h / 2, 1, h);
     }
 
+    // 2. Dựng hình Quái vật 2.5D
     if (monster.alive && !gameWon) {
-        let dx = monster.x - player.x, dy = monster.y - player.y;
-        let distToMonster = Math.sqrt(dx * dx + dy * dy);
-        let monsterAngle = Math.atan2(dy, dx) - player.angle;
-        while (monsterAngle < -Math.PI) monsterAngle += Math.PI * 2;
-        while (monsterAngle > Math.PI) monsterAngle -= Math.PI * 2;
-
-        if (Math.abs(monsterAngle) < player.fov) {
-            let mSize = Math.min(200, (3200 / distToMonster));
-            let sX = (320 / 2) + Math.tan(monsterAngle) * (320 / 2);
-            let sXInt = Math.floor(sX);
-            if (sXInt >= 0 && sXInt < 320 && distToMonster < depthBuffer[sXInt]) {
-                let g = Math.max(40, 180 - distToMonster * 0.5);
-                ctx.fillStyle = currentLevel === 1 ? `rgb(0,${g},0)` : currentLevel === 2 ? `rgb(${g},${g},0)` : `rgb(${g},0,${g})`;
-                ctx.fillRect(sX - mSize/4, 100 - mSize/2, mSize/2, mSize);
-                ctx.fillStyle = "#ff0000"; ctx.fillRect(sX - 4, 100 - mSize/4, 2, 2); ctx.fillRect(sX + 2, 100 - mSize/4, 2, 2);
+        let dx = monster.x - player.x, dy = monster.y - player.y, dist = Math.sqrt(dx*dx + dy*dy);
+        let mAngle = Math.atan2(dy, dx) - player.angle;
+        while (mAngle < -Math.PI) mAngle += Math.PI * 2; while (mAngle > Math.PI) mAngle -= Math.PI * 2;
+        if (Math.abs(mAngle) < player.fov) {
+            let size = Math.min(200, (3200 / dist)), sX = 160 + Math.tan(mAngle) * 160;
+            if (sX >= 0 && sX < 320 && dist < depthBuffer[Math.floor(sX)]) {
+                ctx.fillStyle = currentLevel === 1 ? "#009900" : currentLevel === 2 ? "#999900" : "#990099";
+                ctx.fillRect(sX - size/4, 100 - size/2, size/2, size);
+                ctx.fillStyle = "#f00"; ctx.fillRect(sX - 4, 100 - size/4, 2, 2); ctx.fillRect(sX + 2, 100 - size/4, 2, 2);
             }
         }
-        if (distToMonster < 16 && playerHealth > 0) {
-            playerHealth -= (0.4 + currentLevel * 0.2);
-            if (playerHealth < 0) playerHealth = 0;
-        }
+        if (dist < 16 && playerHealth > 0) playerHealth = Math.max(0, playerHealth - 0.8);
     }
 
+    // 3. Khẩu súng Shotgun
     ctx.save();
     if (isFiring && !gameWon && playerHealth > 0) {
-        ctx.fillStyle = "#ffcc00"; ctx.beginPath(); ctx.moveTo(160, 110); ctx.lineTo(140, 80); ctx.lineTo(160, 60); ctx.lineTo(180, 80); ctx.fill();
-        ctx.fillStyle = "#ff3300"; ctx.beginPath(); ctx.moveTo(160, 110); ctx.lineTo(150, 90); ctx.lineTo(160, 75); ctx.lineTo(170, 90); ctx.fill();
+        ctx.fillStyle = "#f90"; ctx.beginPath(); ctx.moveTo(160, 110); ctx.lineTo(140, 80); ctx.lineTo(160, 60); ctx.lineTo(180, 80); ctx.fill();
     }
-    ctx.fillStyle = "#555555"; ctx.fillRect(152, 120, 7, 80); ctx.fillRect(161, 120, 7, 80);
-    ctx.fillStyle = "#222222"; ctx.fillRect(145, 150, 30, 50);
-    ctx.restore();
+    ctx.fillStyle = "#555"; ctx.fillRect(152, 120, 7, 80); ctx.fillRect(161, 120, 7, 80);
+    ctx.fillStyle = "#222"; ctx.fillRect(145, 150, 30, 50); ctx.restore();
 
-    ctx.fillStyle = "#00ff00"; ctx.fillRect(159, 99, 2, 2);
-    ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(10, 10, 110, 18);
-    ctx.fillStyle = "#ff0000"; ctx.fillRect(15, 14, playerHealth, 10);
+    // 4. Vẽ thanh HUD và giao diện trạng thái
+    ctx.fillStyle = "#0f0"; ctx.fillRect(159, 99, 2, 2);
+    ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(10, 10, 110, 18); ctx.fillRect(240, 10, 70, 18);
+    ctx.fillStyle = "#f00"; ctx.fillRect(15, 14, playerHealth, 10);
     ctx.fillStyle = "#fff"; ctx.font = "10px Arial"; ctx.fillText("HP: " + Math.floor(playerHealth) + "%", 20, 23);
-    
-    let maxLvl = window.maxLevels || 5;
-    ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(240, 10, 70, 18);
-    ctx.fillStyle = "#fff"; ctx.font = "10px Arial"; ctx.fillText("MAP: " + currentLevel + "/" + maxLvl, 248, 23);
+    ctx.fillText("MAP: " + currentLevel + "/" + (window.maxLevels || 5), 248, 23);
 
     if (playerHealth <= 0) {
         ctx.fillStyle = "rgba(130,0,0,0.8)"; ctx.fillRect(0,0,320,200); ctx.fillStyle = "#fff"; ctx.font = "20px Arial"; ctx.fillText("YOU DIED", 115, 95);
+        document.getElementById("btnNext").style.display = "flex"; document.getElementById("btnNext").innerText = "RETRY";
     } else if (gameWon) {
-        ctx.fillStyle = "rgba(0,100,0,0.8)"; ctx.fillRect(0,0,320,200); ctx.fillStyle = "#fff"; ctx.font = "18px Arial"; ctx.fillText("VICTORY! ALL CLEARED", 55, 100);
+        ctx.fillStyle = "rgba(0,100,0,0.8)"; ctx.fillRect(0,0,320,200); ctx.fillStyle = "#fff"; ctx.font = "16px Arial"; ctx.fillText("VICTORY! ALL CLEARED", 55, 100);
+        document.getElementById("btnNext").style.display = "flex"; document.getElementById("btnNext").innerText = "AGAIN";
     } else if (!monster.alive) {
-        ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(40, 85, 240, 40); ctx.fillStyle = "#fff"; ctx.font = "12px Arial"; ctx.fillText("MAP CLEARED!", 115, 95);
-        ctx.font = "9px Arial"; ctx.fillText("Tap FIRE to advance", 118, 115);
+        ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(40, 85, 240, 40); ctx.fillStyle = "#fff"; ctx.font = "12px Arial"; ctx.fillText("MAP CLEARED!", 115, 105);
+        document.getElementById("btnNext").style.display = "flex"; document.getElementById("btnNext").innerText = "NEXT"; // Hiện nút NEXT khi quái chết
     }
 }
 
-function checkCollisionAndMove(nX, nY) {
-    if (playerHealth <= 0 || gameWon || !monster.alive) return;
-    if (getMapCell(Math.floor(nX / mapScale), Math.floor(nY / mapScale)) === 0) { player.x = nX; player.y = nY; }
-}
-
+// Xử lý di chuyển nút bấm cảm ứng nhấn giữ liên tục
 let intervals = {};
 function bindBtn(id, action) {
     const el = document.getElementById(id); if (!el) return;
@@ -149,59 +104,35 @@ function bindBtn(id, action) {
     el.addEventListener("touchstart", start); el.addEventListener("touchend", stop);
     el.addEventListener("mousedown", start); el.addEventListener("mouseup", stop); el.addEventListener("mouseleave", stop);
 }
+const move = (dx, dy) => {
+    if (playerHealth <= 0 || gameWon || !monster.alive) return;
+    let nx = player.x + dx, ny = player.y + dy;
+    if (getMapCell(Math.floor(nx / 40), Math.floor(ny / 40)) === 0) { player.x = nx; player.y = ny; }
+};
+bindBtn("btnUp", () => move(Math.cos(player.angle)*3, Math.sin(player.angle)*3));
+bindBtn("btnDown", () => move(-Math.cos(player.angle)*3, -Math.sin(player.angle)*3));
+bindBtn("btnLeft", () => move(Math.cos(player.angle-Math.PI/2)*3, Math.sin(player.angle-Math.PI/2)*3));
+bindBtn("btnRight", () => move(Math.cos(player.angle+Math.PI/2)*3, Math.sin(player.angle+Math.PI/2)*3));
+bindBtn("btnLookLeft", () => { if(monster.alive) player.angle -= 0.05; });
+bindBtn("btnLookRight", () => { if(monster.alive) player.angle += 0.05; });
 
-bindBtn("btnUp", () => checkCollisionAndMove(player.x + Math.cos(player.angle) * 3, player.y + Math.sin(player.angle) * 3));
-bindBtn("btnDown", () => checkCollisionAndMove(player.x - Math.cos(player.angle) * 3, player.y - Math.sin(player.angle) * 3));
-bindBtn("btnLeft", () => checkCollisionAndMove(player.x + Math.cos(player.angle - Math.PI/2) * 3, player.y + Math.sin(player.angle - Math.PI/2) * 3));
-bindBtn("btnRight", () => checkCollisionAndMove(player.x + Math.cos(player.angle + Math.PI/2) * 3, player.y + Math.sin(player.angle + Math.PI/2) * 3));
-bindBtn("btnLookLeft", () => { if(playerHealth > 0 && !gameWon && monster.alive) player.angle -= 0.05; });
-bindBtn("btnLookRight", () => { if(playerHealth > 0 && !gameWon && monster.alive) player.angle += 0.05; });
+// NÚT FIRE CHỈ CÓ NHIỆM VỤ BẮN SÚNG
+document.getElementById("btnFire").addEventListener("touchstart", (e) => {
+    e.preventDefault(); if (playerHealth <= 0 || gameWon || !monster.alive || isFiring) return;
+    isFiring = true;
+    let ang = Math.atan2(monster.y - player.y, monster.x - player.x) - player.angle;
+    while (ang < -Math.PI) ang += Math.PI * 2; while (ang > Math.PI) ang -= Math.PI * 2;
+    if (Math.abs(ang) < 0.15) { for(let k in intervals) clearInterval(intervals[k]); monster.alive = false; }
+    setTimeout(() => isFiring = false, 150);
+});
 
-// DESIGN LẠI CƠ CHẾ NÚT FIRE ĐỔI MÀN CHẮC CHẮN 100%
-const fireBtn = document.getElementById("btnFire");
-if (fireBtn) {
-    const doFire = (e) => {
-        e.preventDefault();
-        
-        // Trạng thái 1: Đã chết -> Hồi sinh tại màn cũ
-        if (playerHealth <= 0) {
-            loadLevel(currentLevel);
-            return;
-        }
-        
-        // Trạng thái 2: Đã phá đảo 5 màn -> Chơi lại từ đầu
-        if (gameWon) {
-            gameWon = false;
-            loadLevel(1);
-            return;
-        }
-        
-        // Trạng thái 3: THIẾT KẾ LẠI CHÍNH - Nếu quái đã bị hạ gục, dứt khoát tăng cấp màn chơi và tải màn mới
-        if (!monster.alive) {
-            let nextLvl = currentLevel + 1;
-            loadLevel(nextLvl);
-            return; // Thoát hàm dứt khoát để không chạy code bắn súng ở dưới
-        }
-
-        // Trạng thái 4: Quái đang sống -> Xử lý bắn súng tính điểm sát thương
-        if (!isFiring) {
-            isFiring = true;
-            let mAngle = Math.atan2(monster.y - player.y, monster.x - player.x) - player.angle;
-            while (mAngle < -Math.PI) mAngle += Math.PI * 2; 
-            while (mAngle > Math.PI) mAngle -= Math.PI * 2;
-            
-            if (monster.alive && Math.abs(mAngle) < 0.15) {
-                // Xóa sạch tất cả các lệnh nhấn giữ di chuyển đang chạy ngầm để giải phóng tài nguyên hệ thống
-                for (let key in intervals) { clearInterval(intervals[key]); }
-                monster.alive = false; 
-            }
-            setTimeout(() => { isFiring = false; }, 150);
-        }
-    };
-
-    fireBtn.addEventListener("touchstart", doFire, { passive: false });
-    fireBtn.addEventListener("mousedown", doFire);
-}
+// NÚT NEXT RIÊNG BIỆT ĐỂ QUA MÀN DỨT KHOÁT
+document.getElementById("btnNext").addEventListener("touchstart", (e) => {
+    e.preventDefault();
+    if (playerHealth <= 0) loadLevel(currentLevel);
+    else if (gameWon) { gameWon = false; loadLevel(1); }
+    else if (!monster.alive) loadLevel(currentLevel + 1);
+});
 
 function gameLoop() { drawScreen(); requestAnimationFrame(gameLoop); }
 gameLoop();
