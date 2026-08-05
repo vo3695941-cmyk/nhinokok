@@ -22,15 +22,29 @@ function loadLevel(lvl) {
     player.y = window.gameLevelsData[lvl].playerStart.y;
     player.angle = window.gameLevelsData[lvl].playerStart.angle;
     
-    let rx, ry, attempts = 0;
+    let rx = 180, ry = 140, attempts = 0;
     while (attempts++ < 50) {
-        rx = Math.floor(Math.random() * 260) + 30;
-        ry = Math.floor(Math.random() * 180) + 30;
-        if (getMapCell(Math.floor(rx/40), Math.floor(ry/40)) === 0 && Math.sqrt(Math.pow(rx-player.x,2)+Math.pow(ry-player.y,2)) > 60) break;
+        rx = Math.floor(Math.random() * 240) + 40;
+        ry = Math.floor(Math.random() * 160) + 40;
+        if (getMapCell(Math.floor(rx/40), Math.floor(ry/40)) === 0) break;
     }
     monster.x = rx; monster.y = ry; monster.alive = true; playerHealth = 100;
 }
 loadLevel(1);
+
+// HÀM CHUYỂN MÀN KHẨN CẤP TOÀN CỤC - BẮT BUỘC NHẢY SANG 2/5 KHI BẤM NEXT
+window.forceNextLevel = function() {
+    for (let k in intervals) { clearInterval(intervals[k]); }
+    if (playerHealth <= 0) {
+        loadLevel(currentLevel);
+    } else if (gameWon) {
+        gameWon = false;
+        loadLevel(1);
+    } else {
+        monster.alive = false;
+        loadLevel(currentLevel + 1);
+    }
+};
 
 function drawScreen() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -115,23 +129,6 @@ document.getElementById("btnFire").addEventListener("touchstart", (e) => {
     while (ang < -Math.PI) ang += Math.PI * 2; while (ang > Math.PI) ang -= Math.PI * 2;
     if (Math.abs(ang) < 0.15) { monster.alive = false; }
     setTimeout(() => isFiring = false, 150);
-});
-
-// THIẾT KẾ LẠI NÚT NEXT: Đã xóa bỏ hoàn toàn dòng code lỗi gây sập luồng trình duyệt
-document.getElementById("btnNext").addEventListener("touchstart", (e) => {
-    e.preventDefault();
-    
-    // Xóa bộ đệm di chuyển một cách an toàn
-    for (let k in intervals) { clearInterval(intervals[k]); }
-    
-    if (playerHealth <= 0) {
-        loadLevel(currentLevel);
-    } else if (gameWon) {
-        gameWon = false;
-        loadLevel(1);
-    } else {
-        loadLevel(currentLevel + 1);
-    }
 });
 
 function gameLoop() { drawScreen(); requestAnimationFrame(gameLoop); }
