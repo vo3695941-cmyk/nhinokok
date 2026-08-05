@@ -20,7 +20,6 @@ function loadLevel(lvl) {
     player.y = window.gameLevelsData[lvl].playerStart.y;
     player.angle = window.gameLevelsData[lvl].playerStart.angle;
     
-    // Thuật toán tìm vị trí ngẫu nhiên không kẹt tường
     let rx, ry, attempts = 0;
     while (attempts++ < 50) {
         rx = Math.floor(Math.random() * 260) + 30;
@@ -28,7 +27,9 @@ function loadLevel(lvl) {
         if (getMapCell(Math.floor(rx/40), Math.floor(ry/40)) === 0 && Math.sqrt(Math.pow(rx-player.x,2)+Math.pow(ry-player.y,2)) > 60) break;
     }
     monster.x = rx; monster.y = ry; monster.alive = true; playerHealth = 100;
-    document.getElementById("btnNext").style.display = "none"; // Ẩn nút NEXT khi vào màn mới
+    
+    // CẬP NHẬT: Ép buộc nút NEXT luôn hiện ở mức flex, không bao giờ bị ẩn đi khi nạp màn mới
+    document.getElementById("btnNext").style.display = "flex"; 
 }
 loadLevel(1);
 
@@ -37,7 +38,6 @@ function drawScreen() {
     ctx.fillStyle = "#1a1a1a"; ctx.fillRect(0, 0, 320, 100);
     ctx.fillStyle = "#333333"; ctx.fillRect(0, 100, 320, 100);
 
-    // 1. Raycasting dựng tường 3D
     let startAngle = player.angle - player.fov / 2;
     for (let i = 0; i < 320; i++) {
         let angle = startAngle + i * (player.fov / 320), dist = 0, hit = false;
@@ -52,7 +52,6 @@ function drawScreen() {
         ctx.fillRect(i, 100 - h / 2, 1, h);
     }
 
-    // 2. Dựng hình Quái vật 2.5D
     if (monster.alive && !gameWon) {
         let dx = monster.x - player.x, dy = monster.y - player.y, dist = Math.sqrt(dx*dx + dy*dy);
         let mAngle = Math.atan2(dy, dx) - player.angle;
@@ -68,7 +67,6 @@ function drawScreen() {
         if (dist < 16 && playerHealth > 0) playerHealth = Math.max(0, playerHealth - 0.8);
     }
 
-    // 3. Khẩu súng Shotgun
     ctx.save();
     if (isFiring && !gameWon && playerHealth > 0) {
         ctx.fillStyle = "#f90"; ctx.beginPath(); ctx.moveTo(160, 110); ctx.lineTo(140, 80); ctx.lineTo(160, 60); ctx.lineTo(180, 80); ctx.fill();
@@ -76,7 +74,6 @@ function drawScreen() {
     ctx.fillStyle = "#555"; ctx.fillRect(152, 120, 7, 80); ctx.fillRect(161, 120, 7, 80);
     ctx.fillStyle = "#222"; ctx.fillRect(145, 150, 30, 50); ctx.restore();
 
-    // 4. Vẽ thanh HUD và giao diện trạng thái
     ctx.fillStyle = "#0f0"; ctx.fillRect(159, 99, 2, 2);
     ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(10, 10, 110, 18); ctx.fillRect(240, 10, 70, 18);
     ctx.fillStyle = "#f00"; ctx.fillRect(15, 14, playerHealth, 10);
@@ -85,17 +82,16 @@ function drawScreen() {
 
     if (playerHealth <= 0) {
         ctx.fillStyle = "rgba(130,0,0,0.8)"; ctx.fillRect(0,0,320,200); ctx.fillStyle = "#fff"; ctx.font = "20px Arial"; ctx.fillText("YOU DIED", 115, 95);
-        document.getElementById("btnNext").style.display = "flex"; document.getElementById("btnNext").innerText = "RETRY";
+        document.getElementById("btnNext").innerText = "RETRY";
     } else if (gameWon) {
         ctx.fillStyle = "rgba(0,100,0,0.8)"; ctx.fillRect(0,0,320,200); ctx.fillStyle = "#fff"; ctx.font = "16px Arial"; ctx.fillText("VICTORY! ALL CLEARED", 55, 100);
-        document.getElementById("btnNext").style.display = "flex"; document.getElementById("btnNext").innerText = "AGAIN";
+        document.getElementById("btnNext").innerText = "AGAIN";
     } else if (!monster.alive) {
         ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(40, 85, 240, 40); ctx.fillStyle = "#fff"; ctx.font = "12px Arial"; ctx.fillText("MAP CLEARED!", 115, 105);
-        document.getElementById("btnNext").style.display = "flex"; document.getElementById("btnNext").innerText = "NEXT"; // Hiện nút NEXT khi quái chết
+        document.getElementById("btnNext").innerText = "NEXT";
     }
 }
 
-// Xử lý di chuyển nút bấm cảm ứng nhấn giữ liên tục
 let intervals = {};
 function bindBtn(id, action) {
     const el = document.getElementById(id); if (!el) return;
@@ -116,7 +112,6 @@ bindBtn("btnRight", () => move(Math.cos(player.angle+Math.PI/2)*3, Math.sin(play
 bindBtn("btnLookLeft", () => { if(monster.alive) player.angle -= 0.05; });
 bindBtn("btnLookRight", () => { if(monster.alive) player.angle += 0.05; });
 
-// NÚT FIRE CHỈ CÓ NHIỆM VỤ BẮN SÚNG
 document.getElementById("btnFire").addEventListener("touchstart", (e) => {
     e.preventDefault(); if (playerHealth <= 0 || gameWon || !monster.alive || isFiring) return;
     isFiring = true;
@@ -126,7 +121,6 @@ document.getElementById("btnFire").addEventListener("touchstart", (e) => {
     setTimeout(() => isFiring = false, 150);
 });
 
-// NÚT NEXT RIÊNG BIỆT ĐỂ QUA MÀN DỨT KHOÁT
 document.getElementById("btnNext").addEventListener("touchstart", (e) => {
     e.preventDefault();
     if (playerHealth <= 0) loadLevel(currentLevel);
