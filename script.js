@@ -11,9 +11,10 @@ let monster = { x: 180, y: 140, alive: true };
 let depthBuffer = new Array(320);
 let gameWon = false;
 
-// SỬA LỖI LIÊN KẾT: Đọc trực tiếp dữ liệu bản đồ từ đối tượng window toàn cục
+// Đọc dữ liệu bản đồ từ đối tượng window toàn cục
 function getMapCell(x, y) {
     if (x < 0 || x >= mapWidth || y < 0 || y >= mapHeight) return 1;
+    if (!window.gameLevelsData || !window.gameLevelsData[currentLevel]) return 0;
     let index = y * mapWidth + x;
     let currentMapStr = window.gameLevelsData[currentLevel].mapStr;
     return currentMapStr.charAt(index) === '1' ? 1 : 0;
@@ -45,8 +46,16 @@ function spawnMonsterRandomly() {
     monster.x = randomX; monster.y = randomY; monster.alive = true;
 }
 
+// CƠ CHẾ SỬA BUG CHỐNG SẬP MÀN HÌNH ĐEN TRÊN GITHUB
 function loadLevel(lvl) {
-    if (lvl > window.maxLevels) { gameWon = true; return; }
+    // Nếu file maps.js tải chậm hơn script.js, game tự đợi 0.1 giây rồi nạp lại thay vì báo lỗi đứng hình
+    if (!window.gameLevelsData) {
+        setTimeout(() => { loadLevel(lvl); }, 100);
+        return;
+    }
+    
+    let maxLvl = window.maxLevels || 5;
+    if (lvl > maxLvl) { gameWon = true; return; }
     currentLevel = lvl;
     player.x = window.gameLevelsData[lvl].playerStart.x;
     player.y = window.gameLevelsData[lvl].playerStart.y;
@@ -55,6 +64,7 @@ function loadLevel(lvl) {
     playerHealth = 100;
 }
 
+// Khởi chạy game
 loadLevel(1);
 
 function drawScreen() {
@@ -65,7 +75,7 @@ function drawScreen() {
     const numRays = 320, rayStep = player.fov / numRays;
     let startAngle = player.angle - player.fov / 2;
 
-    // 1. Raycasting tường 3D
+    // 1. Raycasting dựng tường 3D
     for (let i = 0; i < numRays; i++) {
         let currentAngle = startAngle + i * rayStep;
         let distance = 0, hitWall = false;
@@ -80,7 +90,7 @@ function drawScreen() {
         ctx.fillRect(i, 100 - wallHeight / 2, 1, wallHeight);
     }
 
-    // 2. Dựng hình Quái 2.5D
+    // 2. Dựng hình Quái vật 2.5D
     if (monster.alive && !gameWon) {
         let dx = monster.x - player.x, dy = monster.y - player.y;
         let distToMonster = Math.sqrt(dx * dx + dy * dy);
@@ -91,7 +101,8 @@ function drawScreen() {
         if (Math.abs(monsterAngle) < player.fov) {
             let mSize = Math.min(200, (3200 / distToMonster));
             let sX = (320 / 2) + Math.tan(monsterAngle) * (320 / 2);
-            if (sX >= 0 && sX < 320 && distToMonster < depthBuffer[Math.floor(sX)]) {
+            let sXInt = Math.floor(sX);
+            if (sXInt >= 0 && sXInt < 320 && distToMonster < depthBuffer[sXInt]) {
                 let g = Math.max(40, 180 - distToMonster * 0.5);
                 ctx.fillStyle = currentLevel === 1 ? `rgb(0,${g},0)` : currentLevel === 2 ? `rgb(${g},${g},0)` : `rgb(${g},0,${g})`;
                 ctx.fillRect(sX - mSize/4, 100 - mSize/2, mSize/2, mSize);
@@ -104,7 +115,7 @@ function drawScreen() {
         }
     }
 
-    // 3. Súng Shotgun
+    // 3. Súng Shotgun và hiệu ứng lửa
     ctx.save();
     if (isFiring && !gameWon && playerHealth > 0) {
         ctx.fillStyle = "#ffcc00"; ctx.beginPath(); ctx.moveTo(160, 110); ctx.lineTo(140, 80); ctx.lineTo(160, 60); ctx.lineTo(180, 80); ctx.fill();
@@ -114,13 +125,15 @@ function drawScreen() {
     ctx.fillStyle = "#222222"; ctx.fillRect(145, 150, 30, 50);
     ctx.restore();
 
-    // 4. Giao diện HUD
+    // 4. Giao diện trạng thái (HUD)
     ctx.fillStyle = "#00ff00"; ctx.fillRect(159, 99, 2, 2);
     ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(10, 10, 110, 18);
     ctx.fillStyle = "#ff0000"; ctx.fillRect(15, 14, playerHealth, 10);
     ctx.fillStyle = "#fff"; ctx.font = "10px Arial"; ctx.fillText("HP: " + Math.floor(playerHealth) + "%", 20, 23);
+    
+    let maxLvl = window.maxLevels || 5;
     ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(240, 10, 70, 18);
-    ctx.fillStyle = "#fff"; ctx.font = "10px Arial"; ctx.fillText("MAP: " + currentLevel + "/" + window.maxLevels, 248, 23);
+    ctx.fillStyle = "#fff"; ctx.font = "10px Arial"; ctx.fillText("MAP: " + currentLevel + "/" + maxLvl, 248, 23);
 
     if (playerHealth <= 0) {
         ctx.fillStyle = "rgba(130,0,0,0.8)"; ctx.fillRect(0,0,320,200); ctx.fillStyle = "#fff"; ctx.font = "20px Arial"; ctx.fillText("YOU DIED", 115, 95);
