@@ -27,8 +27,6 @@ function loadLevel(lvl) {
         if (getMapCell(Math.floor(rx/40), Math.floor(ry/40)) === 0 && Math.sqrt(Math.pow(rx-player.x,2)+Math.pow(ry-player.y,2)) > 60) break;
     }
     monster.x = rx; monster.y = ry; monster.alive = true; playerHealth = 100;
-    
-    // CẬP NHẬT: Ép buộc nút NEXT luôn hiện ở mức flex, không bao giờ bị ẩn đi khi nạp màn mới
     document.getElementById("btnNext").style.display = "flex"; 
 }
 loadLevel(1);
@@ -121,11 +119,21 @@ document.getElementById("btnFire").addEventListener("touchstart", (e) => {
     setTimeout(() => isFiring = false, 150);
 });
 
+// FIX CHÍNH: NÚT NEXT BÂY GIỜ BẤM LÀ QUA MÀN BẤT CHẤP QUÁI CÒN SỐNG HAY CHẾT
 document.getElementById("btnNext").addEventListener("touchstart", (e) => {
     e.preventDefault();
-    if (playerHealth <= 0) loadLevel(currentLevel);
-    else if (gameWon) { gameWon = false; loadLevel(1); }
-    else if (!monster.alive) loadLevel(currentLevel + 1);
+    // Xóa toàn bộ lệnh nhấn giữ di chuyển ngầm trước khi đổi màn chơi mới
+    for (let k in intervals) clearInterval(intervals[k]);
+    
+    if (playerHealth <= 0) {
+        loadLevel(currentLevel);
+    } else if (gameWon) {
+        gameWon = false;
+        loadLevel(1);
+    } else {
+        // Bấm qua luôn màn tiếp theo bất kể trạng thái của quái vật
+        loadLevel(currentLevel + 1);
+    }
 });
 
 function gameLoop() { drawScreen(); requestAnimationFrame(gameLoop); }
