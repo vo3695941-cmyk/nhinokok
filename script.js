@@ -29,7 +29,6 @@ function loadLevel(lvl) {
         if (getMapCell(Math.floor(rx/40), Math.floor(ry/40)) === 0 && Math.sqrt(Math.pow(rx-player.x,2)+Math.pow(ry-player.y,2)) > 60) break;
     }
     monster.x = rx; monster.y = ry; monster.alive = true; playerHealth = 100;
-    document.getElementById("btnNext").style.display = "flex"; 
 }
 loadLevel(1);
 
@@ -114,25 +113,23 @@ document.getElementById("btnFire").addEventListener("touchstart", (e) => {
     isFiring = true;
     let ang = Math.atan2(monster.y - player.y, monster.x - player.x) - player.angle;
     while (ang < -Math.PI) ang += Math.PI * 2; while (ang > Math.PI) ang -= Math.PI * 2;
-    if (Math.abs(ang) < 0.15) { for(let k in intervals) clearInterval(intervals[k]); monster.alive = false; }
+    if (Math.abs(ang) < 0.15) { monster.alive = false; }
     setTimeout(() => isFiring = false, 150);
 });
 
-// SỬA LỖI GỐC: NÚT NEXT KHÔNG BỊ CHẶN BỞI BẤT KỲ TRẠNG THÁI NÀO CỦA QUÁI VẬT
+// THIẾT KẾ LẠI NÚT NEXT: Đã xóa bỏ hoàn toàn dòng code lỗi gây sập luồng trình duyệt
 document.getElementById("btnNext").addEventListener("touchstart", (e) => {
     e.preventDefault();
-    // 1. Dọn dẹp sạch sẽ bộ đệm nút nhấn giữ để tránh xung đột
-    for (let k in intervals) { clearInterval(intervals[key => key]); clearInterval(intervals[k]); }
     
-    // 2. Xử lý đổi màn dứt khoát
+    // Xóa bộ đệm di chuyển một cách an toàn
+    for (let k in intervals) { clearInterval(intervals[k]); }
+    
     if (playerHealth <= 0) {
         loadLevel(currentLevel);
     } else if (gameWon) {
         gameWon = false;
         loadLevel(1);
     } else {
-        // Ép quái cũ biến mất để giải phóng luồng logic cũ trước khi đổi Map
-        monster.alive = false; 
         loadLevel(currentLevel + 1);
     }
 });
