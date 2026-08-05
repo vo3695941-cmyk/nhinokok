@@ -1,110 +1,66 @@
-/* Đảm bảo toàn bộ trang web vừa vặn màn hình dọc điện thoại */
 body { 
-    margin: 0; 
-    padding: 0; 
-    background: #111; 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    justify-content: flex-start; 
-    width: 100vw; 
-    height: 100vh; 
-    font-family: sans-serif; 
-    overflow: hidden; 
-    touch-action: none; 
+    margin: 0; padding: 0; background: #111; 
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-start; 
+    width: 100vw; height: 100vh; font-family: sans-serif; overflow: hidden; touch-action: none; 
 }
 
-/* SỬA LỖI MÀN HÌNH MỎNG: Tự động kéo dãn màn hình game Canvas to rõ, vuông vắn ở nửa trên */
 canvas { 
-    background: #000; 
-    width: 100vw; 
-    height: 55vw; 
-    max-height: 45vh; 
-    box-sizing: border-box;
-    border-bottom: 4px solid #333; 
+    background: #000; width: 100vw; height: 55vw; max-height: 45vh; 
+    box-sizing: border-box; border-bottom: 4px solid #333; 
 }
 
-/* Vùng chứa bảng điều khiển lớn ở nửa dưới */
 .controller-area { 
-    display: flex; 
-    flex-direction: row; 
-    justify-content: space-around; 
-    align-items: center; 
-    width: 100vw; 
-    flex-grow: 1; 
-    padding: 15px 0; 
-    background: #050505; 
-    box-sizing: border-box;
+    display: flex; flex-direction: row; justify-content: space-around; align-items: center; 
+    width: 100vw; flex-grow: 1; padding: 15px 0; background: #050505; box-sizing: border-box;
 }
 
-/* Cụm 4 nút di chuyển bên trái xếp thành hình chữ T ngược */
 .move-controls { 
-    display: grid; 
-    grid-template-columns: repeat(3, 55px); 
-    grid-template-rows: repeat(2, 55px); 
-    gap: 8px; 
+    display: grid; grid-template-columns: repeat(3, 55px); grid-template-rows: repeat(2, 55px); gap: 8px; 
 }
 
-/* Cụm nút xoay camera và nút bắn súng bên phải */
 .action-controls { 
-    display: flex; 
-    flex-direction: row; 
-    align-items: center; 
-    gap: 15px; 
+    display: flex; flex-direction: row; align-items: center; gap: 15px; 
 }
 
 .rotate-group { 
-    display: flex; 
-    flex-direction: column; 
-    gap: 8px; 
+    display: flex; flex-direction: column; gap: 8px; 
 }
 
-/* Thiết kế nút bấm cảm ứng hình vuông bo góc màu xám cực đẹp */
+/* Cụm chứa nút NEXT và nút FIRE xếp chồng dọc lên nhau */
+.fire-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
 .btn { 
-    background: #222; 
-    color: #fff; 
-    border: 2px solid #555; 
-    border-radius: 12px; 
-    font-size: 22px; 
-    font-weight: bold; 
-    display: flex; 
-    justify-content: center; 
-    align-items: center; 
-    user-select: none; 
-    -webkit-user-select: none; 
-    width: 55px; 
-    height: 55px; 
-    box-sizing: border-box;
+    background: #222; color: #fff; border: 2px solid #555; border-radius: 12px; 
+    font-size: 22px; font-weight: bold; display: flex; justify-content: center; align-items: center; 
+    user-select: none; -webkit-user-select: none; width: 55px; height: 55px; box-sizing: border-box;
 }
 
-/* Hiệu ứng chớp đỏ khi ngón tay chạm giữ nút */
-.btn:active { 
-    background: #800; 
-    border-color: #f00; 
-}
+.btn:active { background: #800; border-color: #f00; }
 
-/* Ép nút bắn tròn to màu đỏ nổi bật kể cả khi bị trình duyệt tự dịch sang chữ tiếng Việt */
 .btn-fire, #btnFire { 
-    background: #aa0000 !important; 
-    width: 75px !important; 
-    height: 75px !important; 
-    border-radius: 50% !important; 
-    font-size: 14px !important; 
-    border: 3px solid #ff3333 !important; 
+    background: #aa0000 !important; width: 75px !important; height: 75px !important; 
+    border-radius: 50% !important; font-size: 14px !important; border: 3px solid #ff3333 !important; 
+    color: #ffffff !important; display: flex !important; justify-content: center !important; 
+    align-items: center !important; text-align: center !important;
+}
+.btn-fire:active, #btnFire:active { background: #ff0000 !important; }
+
+/* THIẾT KẾ NÚT QUA MÀN RIÊNG BIỆT: Mặc định ẩn đi (display: none), màu xanh lá nổi bật */
+.btn-next, #btnNext {
+    display: none;
+    background: #007700 !important;
+    width: 75px !important;
+    height: 40px !important;
+    border-radius: 8px !important;
+    font-size: 14px !important;
+    border: 2px solid #00ff00 !important;
     color: #ffffff !important;
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-    text-align: center !important;
 }
+.btn-next:active, #btnNext:active { background: #00ff00 !important; }
 
-.btn-fire:active, #btnFire:active { 
-    background: #ff0000 !important; 
-}
-
-/* Ô trống định hình cụm nút di chuyển */
-.empty { 
-    visibility: hidden; 
-    width: 55px; 
-    height: 55px; 
-}
+.empty { visibility: hidden; width: 55px; height: 55px; }
