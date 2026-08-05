@@ -131,19 +131,20 @@ function drawScreen() {
     } else if (gameWon) {
         ctx.fillStyle = "rgba(0,100,0,0.8)"; ctx.fillRect(0,0,320,200); ctx.fillStyle = "#fff"; ctx.font = "18px Arial"; ctx.fillText("VICTORY! ALL CLEARED", 55, 100);
     } else if (!monster.alive) {
-        ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(40, 85, 240, 40); ctx.fillStyle = "#fff"; ctx.font = "12px Arial"; ctx.fillText("MAP CLEARED!", 115, 100);
+        ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(40, 85, 240, 40); ctx.fillStyle = "#fff"; ctx.font = "12px Arial"; ctx.fillText("MAP CLEARED!", 115, 95);
+        ctx.font = "9px Arial"; ctx.fillText("Tap FIRE to advance", 118, 115);
     }
 }
 
 function checkCollisionAndMove(nX, nY) {
-    if (playerHealth <= 0 || gameWon) return;
+    if (playerHealth <= 0 || gameWon || !monster.alive) return;
     if (getMapCell(Math.floor(nX / mapScale), Math.floor(nY / mapScale)) === 0) { player.x = nX; player.y = nY; }
 }
 
 let intervals = {};
 function bindBtn(id, action) {
     const el = document.getElementById(id); if (!el) return;
-    const start = (e) => { e.preventDefault(); clearInterval(intervals[id]); intervals[id] = setInterval(action, 30); };
+    const start = (e) => { e.preventDefault(); if(!monster.alive) return; clearInterval(intervals[id]); intervals[id] = setInterval(action, 30); };
     const stop = () => clearInterval(intervals[id]);
     el.addEventListener("touchstart", start); el.addEventListener("touchend", stop);
     el.addEventListener("mousedown", start); el.addEventListener("mouseup", stop); el.addEventListener("mouseleave", stop);
@@ -153,53 +154,53 @@ bindBtn("btnUp", () => checkCollisionAndMove(player.x + Math.cos(player.angle) *
 bindBtn("btnDown", () => checkCollisionAndMove(player.x - Math.cos(player.angle) * 3, player.y - Math.sin(player.angle) * 3));
 bindBtn("btnLeft", () => checkCollisionAndMove(player.x + Math.cos(player.angle - Math.PI/2) * 3, player.y + Math.sin(player.angle - Math.PI/2) * 3));
 bindBtn("btnRight", () => checkCollisionAndMove(player.x + Math.cos(player.angle + Math.PI/2) * 3, player.y + Math.sin(player.angle + Math.PI/2) * 3));
-bindBtn("btnLookLeft", () => { if(playerHealth > 0 && !gameWon) player.angle -= 0.05; });
-bindBtn("btnLookRight", () => { if(playerHealth > 0 && !gameWon) player.angle += 0.05; });
+bindBtn("btnLookLeft", () => { if(playerHealth > 0 && !gameWon && monster.alive) player.angle -= 0.05; });
+bindBtn("btnLookRight", () => { if(playerHealth > 0 && !gameWon && monster.alive) player.angle += 0.05; });
 
-// --- SỬA LỖI ĐỔI MÀN CHƠI (FIXED TRANSITION) ---
+// DESIGN LẠI CƠ CHẾ NÚT FIRE ĐỔI MÀN CHẮC CHẮN 100%
 const fireBtn = document.getElementById("btnFire");
 if (fireBtn) {
-    const handleFireAction = (e) => {
+    const doFire = (e) => {
         e.preventDefault();
         
-        // 1. Nếu chết, bấm FIRE để nạp lại màn chơi hiện tại ngay lập tức
+        // Trạng thái 1: Đã chết -> Hồi sinh tại màn cũ
         if (playerHealth <= 0) {
             loadLevel(currentLevel);
             return;
         }
         
-        // 2. Nếu đã thắng toàn bộ game, bấm FIRE để chơi lại màn 1
+        // Trạng thái 2: Đã phá đảo 5 màn -> Chơi lại từ đầu
         if (gameWon) {
             gameWon = false;
             loadLevel(1);
             return;
         }
         
-        // 3. FIX CHÍNH: Nếu quái đã chết, xử lý chuyển màn dứt khoát rồi thoát hàm ngay, tránh dính nút bấm
+        // Trạng thái 3: THIẾT KẾ LẠI CHÍNH - Nếu quái đã bị hạ gục, dứt khoát tăng cấp màn chơi và tải màn mới
         if (!monster.alive) {
-            loadLevel(currentLevel + 1);
-            return;
+            let nextLvl = currentLevel + 1;
+            loadLevel(nextLvl);
+            return; // Thoát hàm dứt khoát để không chạy code bắn súng ở dưới
         }
 
-        // 4. Logic bắn súng khi quái đang sống bình thường
+        // Trạng thái 4: Quái đang sống -> Xử lý bắn súng tính điểm sát thương
         if (!isFiring) {
             isFiring = true;
-            
             let mAngle = Math.atan2(monster.y - player.y, monster.x - player.x) - player.angle;
             while (mAngle < -Math.PI) mAngle += Math.PI * 2; 
             while (mAngle > Math.PI) mAngle -= Math.PI * 2;
             
             if (monster.alive && Math.abs(mAngle) < 0.15) {
-                monster.alive = false; // Quái chết, kích hoạt trạng thái MAP CLEARED
+                // Xóa sạch tất cả các lệnh nhấn giữ di chuyển đang chạy ngầm để giải phóng tài nguyên hệ thống
+                for (let key in intervals) { clearInterval(intervals[key]); }
+                monster.alive = false; 
             }
-            
             setTimeout(() => { isFiring = false; }, 150);
         }
     };
 
-    // Chỉ dùng sự kiện 'touchstart' trên điện thoại để loại bỏ hoàn toàn hiện tượng dính nút bấm gấp đôi của mousedown
-    fireBtn.addEventListener("touchstart", handleFireAction, { passive: false });
-    fireBtn.addEventListener("mousedown", handleFireAction);
+    fireBtn.addEventListener("touchstart", doFire, { passive: false });
+    fireBtn.addEventListener("mousedown", doFire);
 }
 
 function gameLoop() { drawScreen(); requestAnimationFrame(gameLoop); }
