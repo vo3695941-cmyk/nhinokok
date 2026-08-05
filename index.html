@@ -2,7 +2,8 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>HTML5 Doom Mobile - Fixed GitHub</title>
+    <title>HTML5 Doom Mobile - Fixed GitHub Connection</title>
+    <!-- Nhúng file CSS giao diện nút bấm -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -30,9 +31,8 @@
         </div>
     </div>
 
-    <!-- Nhúng file chứa dữ liệu các Màn chơi trước -->
-    <script src="maps.js"></script>
-    <!-- Nhúng file logic xử lý game sau -->
-    <script src="script.js"></script>
+    <!-- SỬA LỖI KẾT NỐI: Thêm thuộc tính defer để ép trình duyệt nạp maps.js trước rồi mới chạy script.js -->
+    <script src="maps.js" defer></script>
+    <script src="script.js" defer></script>
 </body>
 </html>
