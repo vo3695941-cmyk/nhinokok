@@ -3,8 +3,8 @@
 <head>
     <meta name="google" content="notranslate">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>HTML5 Doom Mobile</title>
-    <link rel="stylesheet" href="style.css">
+    <title>HTML5 Doom Mobile - Next Button</title>
+    <link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
 
@@ -27,13 +27,15 @@
                 <div class="btn" id="btnLookLeft" style="font-size: 13px;">Q.Trái</div>
                 <div class="btn" id="btnLookRight" style="font-size: 13px;">Q.Phải</div>
             </div>
-            <div class="btn btn-fire" id="btnFire">FIRE</div>
+            <!-- Cụm nút hành động bên phải: Có thêm nút NEXT riêng biệt -->
+            <div class="fire-group">
+                <div class="btn btn-next" id="btnNext">NEXT</div>
+                <div class="btn btn-fire" id="btnFire">FIRE</div>
+            </div>
         </div>
     </div>
 
-    <!-- KHẮC PHỤC BUG: Bỏ hẳn chữ "defer" để trình duyệt bắt buộc phải chạy xong maps.js rồi mới được sờ tới script.js -->
-        <script src="maps.js?v=4"></script>
-    <script src="script.js?v=4"></script>
-
+    <script src="maps.js?v=5"></script>
+    <script src="script.js?v=5"></script>
 </body>
 </html>
