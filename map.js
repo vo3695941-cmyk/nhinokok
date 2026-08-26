@@ -1,22 +1,22 @@
 const mapWidth = 16;
 const mapHeight = 16;
 
-// Số 1 = Tường vững chãi, Số 4 = Cửa chặn (khi chưa mở), Số 0 = Đường đi thoáng đạt
+// MAP THẲNG HÀNG: Đi thẳng một mạch từ trên xuống dưới, không sợ bị bít đường hay đi lạc!
 let map = [
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-    1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,
-    1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,
-    1,0,0,0,0,0,4,0,0,0,0,0,0,0,0,1, // Cửa màn 1 sang màn 2 (Tọa độ: X=6, Y=3)
-    1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,
-    1,1,1,4,1,1,1,1,1,1,1,4,1,1,1,1, 
-    1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,
-    1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,
-    1,0,0,0,0,0,4,0,0,0,0,0,0,0,0,1, // Cửa màn 2 sang màn 3 (Tọa độ: X=6, Y=8)
-    1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,
-    1,1,1,1,1,1,1,1,1,1,1,1,1,4,1,1, // Cửa màn 3 sang màn 4 (Tọa độ: X=13, Y=10)
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1, // Khu vực màn 4 (Bị chặn kín hoàn toàn)
+    1,1,1,1,1,1,1,4,1,1,1,1,1,1,1,1, // CỬA 1 (Tọa độ X:7, Y:3) - Diệt 5 quái thường để mở
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,1,1,1,1,1,1,4,1,1,1,1,1,1,1,1, // CỬA 2 (Tọa độ X:7, Y:6) - Diệt 3 quái máy để mở
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,1,1,1,1,1,1,4,1,1,1,1,1,1,1,1, // CỬA 3 (Tọa độ X:7, Y:9) - Diệt BOSS Robot để mở
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // Vùng chặn của Màn 4 (Không thể qua)
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
 ];
@@ -30,26 +30,24 @@ function initLevel(lvl) {
     
     if (lvl === 1) {
         document.getElementById('score').innerText = "0/5";
-        document.getElementById('msg-box').innerText = "Nhiệm vụ: Tiêu diệt 5 quái vật để mở cổng!";
+        document.getElementById('msg-box').innerText = "MÀN 1: Diệt 5 quái thường để mở Cửa 1 ngay phía trước!";
         monsters = [
-            { x: 4.5, y: 2.5, type: 1, hp: 1, maxHp: 1, active: true, color: "#ff2222", size: 0.7 },
-            { x: 2.5, y: 4.5, type: 1, hp: 1, maxHp: 1, active: true, color: "#ff2222", size: 0.7 }
+            { x: 5.5, y: 2.5, type: 1, hp: 1, maxHp: 1, active: true, color: "#ff2222", size: 0.7 },
+            { x: 9.5, y: 2.5, type: 1, hp: 1, maxHp: 1, active: true, color: "#ff2222", size: 0.7 }
         ];
     } else if (lvl === 2) {
-        player.x = 9.5; player.y = 2.5; 
         document.getElementById('score').innerText = "0/3";
-        document.getElementById('msg-box').innerText = "MÀN 2: Quái cơ máy xuất hiện! Bắn 3 phát mới chết!";
+        document.getElementById('msg-box').innerText = "MÀN 2: Diệt 3 quái cơ máy (Vàng) để mở Cửa 2 đi tiếp!";
         monsters = [
-            { x: 12.5, y: 2.5, type: 2, hp: 3, maxHp: 3, active: true, color: "#ffee00", size: 0.8 },
-            { x: 9.5, y: 4.5, type: 2, hp: 3, maxHp: 3, active: true, color: "#ffee00", size: 0.8 },
-            { x: 13.5, y: 4.5, type: 2, hp: 3, maxHp: 3, active: true, color: "#ffee00", size: 0.8 }
+            { x: 4.5, y: 5.5, type: 2, hp: 3, maxHp: 3, active: true, color: "#ffee00", size: 0.8 },
+            { x: 7.5, y: 5.5, type: 2, hp: 3, maxHp: 3, active: true, color: "#ffee00", size: 0.8 },
+            { x: 11.5, y: 5.5, type: 2, hp: 3, maxHp: 3, active: true, color: "#ffee00", size: 0.8 }
         ];
     } else if (lvl === 3) {
-        player.x = 9.5; player.y = 8.5; 
         document.getElementById('score').innerText = "0/1";
-        document.getElementById('msg-box').innerText = "MÀN 3: BOSS Robot khổng lồ xuất hiện! Tiêu diệt nó!";
+        document.getElementById('msg-box').innerText = "MÀN 3: Diệt BOSS Robot khổng lồ (Tím) để mở Cửa 3!";
         monsters = [
-            { x: 12.5, y: 8.5, type: 3, hp: 15, maxHp: 15, active: true, color: "#aa00ff", size: 1.4 }
+            { x: 7.5, y: 8.5, type: 3, hp: 15, maxHp: 15, active: true, color: "#aa00ff", size: 1.4 }
         ];
     }
 }
