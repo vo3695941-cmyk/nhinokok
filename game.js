@@ -2,7 +2,7 @@ const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
 const player = {
-    x: 2.5, y: 2.5, angle: 0, fov: Math.PI / 3,
+    x: 7.5, y: 1.5, angle: Math.PI / 2, fov: Math.PI / 3, // Xuất phát nhìn thẳng xuống dưới
     speed: 0.05, rotSpeed: 0.05,
     ammo: 99, score: 0, level: 1,
     shooting: false, shootFrame: 0
@@ -51,8 +51,8 @@ document.getElementById('btn-shoot').addEventListener('touchstart', (e) => {
                         player.score++;
                         checkLevelProgress();
                     } else {
-                        m.x -= Math.cos(angleToMonster) * 0.2;
-                        m.y -= Math.sin(angleToMonster) * 0.2;
+                        m.x -= Math.cos(angleToMonster) * 0.1;
+                        m.y -= Math.sin(angleToMonster) * 0.1;
                     }
                 }
             }
@@ -60,28 +60,27 @@ document.getElementById('btn-shoot').addEventListener('touchstart', (e) => {
     }
 });
 
-// [FIXED] Sửa đúng tọa độ mở cửa cho màn 2
 function checkLevelProgress() {
     if (player.level === 1) {
         document.getElementById('score').innerText = player.score + "/5";
         if (player.score >= 5) {
-            map[3 * mapWidth + 6] = 0; // Mở cửa màn 1 (Tọa độ 6,3)
-            document.getElementById('msg-box').innerText = "CỔNG ĐÃ MỞ! Hãy đi sang vùng bên phải để vào MÀN 2!";
+            map[3 * mapWidth + 7] = 0; // Mở Cửa 1 (7,3)
+            document.getElementById('msg-box').innerText = "CỬA 1 MỞ! Hãy đi thẳng tiếp xuống phía dưới để vào MÀN 2!";
         } else {
             setTimeout(() => {
-                monsters.push({ x: 2 + Math.random()*3, y: 2 + Math.random()*3, type: 1, hp: 1, maxHp: 1, active: true, color: "#ff2222", size: 0.7 });
+                if(player.level === 1) monsters.push({ x: 4 + Math.random()*8, y: 1.5 + Math.random()*1, type: 1, hp: 1, maxHp: 1, active: true, color: "#ff2222", size: 0.7 });
             }, 1000);
         }
     } else if (player.level === 2) {
         document.getElementById('score').innerText = player.score + "/3";
         if (player.score >= 3) {
-            map[8 * mapWidth + 6] = 0; // [FIXED] Mở chuẩn xác cửa màn 2 tại tọa độ (6,8)
-            document.getElementById('msg-box').innerText = "CỔNG MÀN 2 MỞ! Quay lại khe hở phía dưới bên trái để xuống phòng BOSS!";
+            map[6 * mapWidth + 7] = 0; // Mở Cửa 2 (7,6)
+            document.getElementById('msg-box').innerText = "CỬA 2 MỞ! Tiếp tục đi thẳng xuống phía dưới để gặp BOSS!";
         }
     } else if (player.level === 3) {
         document.getElementById('score').innerText = player.score + "/1";
-        document.getElementById('msg-box').innerText = "BOSS ĐÃ BỊ TIÊU DIỆT! Đi tới góc dưới bên phải!";
-        map[10 * mapWidth + 13] = 0; // Mở cửa màn 3 (Tọa độ 13,10)
+        map[9 * mapWidth + 7] = 0; // Mở Cửa 3 (7,9)
+        document.getElementById('msg-box').innerText = "BOSS ĐÃ BỊ TIÊU DIỆT! Tiến thẳng xuống dưới để qua màn tiếp theo!";
     }
 }
 
@@ -98,19 +97,17 @@ function movePlayer() {
     let cellX = map[Math.floor(player.y) * mapWidth + Math.floor(newX)];
     let cellY = map[Math.floor(newY) * mapWidth + Math.floor(player.x)];
 
-    // [FIXED] Không cho phép đi xuyên qua ô số 4 (Cửa đóng). Chỉ cho đi qua khi ô đó đã biến thành 0
     if (cellX === 0) player.x = newX;
     if (cellY === 0) player.y = newY;
 
-    let currentGridX = Math.floor(player.x);
     let currentGridY = Math.floor(player.y);
 
-    // Kích hoạt cơ chế phát hiện vùng để chuyển màn chơi
-    if (player.level === 1 && currentGridX > 6) {
+    // Kích hoạt cơ chế chuyển đổi màn chơi mượt mà theo trục dọc Y
+    if (player.level === 1 && currentGridY > 3) {
         initLevel(2);
-    } else if (player.level === 2 && currentGridX < 6 && currentGridY > 5) {
+    } else if (player.level === 2 && currentGridY > 6) {
         initLevel(3);
-    } else if (player.level === 3 && currentGridY > 10) {
+    } else if (player.level === 3 && currentGridY > 9) {
         player.level = 4;
         document.getElementById('level').innerText = "4";
         document.getElementById('msg-box').innerText = "Xin lỗi đang xây thêm 🛠️";
@@ -156,7 +153,15 @@ function renderRaycaster() {
         const wallHeight = Math.min(height, (height / correctedDistance));
         let colorTone = Math.max(10, 200 - (correctedDistance * 13)); 
 
-        let color = (wallType === 4) ? `rgb(150, 60, 0)` : `rgb(${colorTone}, ${colorTone}, ${colorTone})`;
+        let color = "";
+        if (wallType === 4) {
+            color = `rgb(220, 100, 0)`; // Cửa chặn luôn có màu Đỏ Cam rực rỡ dễ nhìn!
+        } else {
+            if (player.level === 1) color = `rgb(${colorTone}, ${colorTone}, ${colorTone})`; // Màn 1: Tường Xám
+            else if (player.level === 2) color = `rgb(20, ${colorTone}, 20)`;               // Màn 2: Tường Xanh Lá
+            else if (player.level === 3) color = `rgb(20, 20, ${colorTone})`;               // Màn 3: Tường Xanh Dương
+            else color = "#000";
+        }
         ctx.fillStyle = color; ctx.fillRect(i, (height - wallHeight) / 2, 1, wallHeight);
     }
 
@@ -213,4 +218,3 @@ function gameLoop() {
 }
 
 gameLoop();
-
