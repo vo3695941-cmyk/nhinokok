@@ -8,7 +8,6 @@ const player = {
     shooting: false, shootFrame: 0
 };
 
-// Khởi chạy nạp cấu hình màn 1 từ file map.js
 initLevel(1);
 
 let depthBuffer = new Array(640).fill(16);
@@ -61,12 +60,13 @@ document.getElementById('btn-shoot').addEventListener('touchstart', (e) => {
     }
 });
 
+// [FIXED] Sửa đúng tọa độ mở cửa cho màn 2
 function checkLevelProgress() {
     if (player.level === 1) {
         document.getElementById('score').innerText = player.score + "/5";
         if (player.score >= 5) {
-            map[3 * mapWidth + 6] = 0; 
-            document.getElementById('msg-box').innerText = "CỔNG ĐÃ MỞ! Hãy đi xuyên qua khe cửa để sang MÀN 2!";
+            map[3 * mapWidth + 6] = 0; // Mở cửa màn 1 (Tọa độ 6,3)
+            document.getElementById('msg-box').innerText = "CỔNG ĐÃ MỞ! Hãy đi sang vùng bên phải để vào MÀN 2!";
         } else {
             setTimeout(() => {
                 monsters.push({ x: 2 + Math.random()*3, y: 2 + Math.random()*3, type: 1, hp: 1, maxHp: 1, active: true, color: "#ff2222", size: 0.7 });
@@ -75,13 +75,13 @@ function checkLevelProgress() {
     } else if (player.level === 2) {
         document.getElementById('score').innerText = player.score + "/3";
         if (player.score >= 3) {
-            map[8 * mapWidth + 6] = 0; 
-            document.getElementById('msg-box').innerText = "CỔNG MÀN 2 MỞ! Tiến sâu xuống phía dưới để đến phòng BOSS!";
+            map[8 * mapWidth + 6] = 0; // [FIXED] Mở chuẩn xác cửa màn 2 tại tọa độ (6,8)
+            document.getElementById('msg-box').innerText = "CỔNG MÀN 2 MỞ! Quay lại khe hở phía dưới bên trái để xuống phòng BOSS!";
         }
     } else if (player.level === 3) {
         document.getElementById('score').innerText = player.score + "/1";
-        document.getElementById('msg-box').innerText = "BOSS ĐÃ BỊ TIÊU DIỆT! Tiến đến khu vực kế tiếp!";
-        map[10 * mapWidth + 13] = 0; 
+        document.getElementById('msg-box').innerText = "BOSS ĐÃ BỊ TIÊU DIỆT! Đi tới góc dưới bên phải!";
+        map[10 * mapWidth + 13] = 0; // Mở cửa màn 3 (Tọa độ 13,10)
     }
 }
 
@@ -98,15 +98,17 @@ function movePlayer() {
     let cellX = map[Math.floor(player.y) * mapWidth + Math.floor(newX)];
     let cellY = map[Math.floor(newY) * mapWidth + Math.floor(player.x)];
 
-    if (cellX === 0 || cellX === 4) player.x = newX;
-    if (cellY === 0 || cellY === 4) player.y = newY;
+    // [FIXED] Không cho phép đi xuyên qua ô số 4 (Cửa đóng). Chỉ cho đi qua khi ô đó đã biến thành 0
+    if (cellX === 0) player.x = newX;
+    if (cellY === 0) player.y = newY;
 
     let currentGridX = Math.floor(player.x);
     let currentGridY = Math.floor(player.y);
 
+    // Kích hoạt cơ chế phát hiện vùng để chuyển màn chơi
     if (player.level === 1 && currentGridX > 6) {
         initLevel(2);
-    } else if (player.level === 2 && currentGridY > 5) {
+    } else if (player.level === 2 && currentGridX < 6 && currentGridY > 5) {
         initLevel(3);
     } else if (player.level === 3 && currentGridY > 10) {
         player.level = 4;
@@ -211,3 +213,4 @@ function gameLoop() {
 }
 
 gameLoop();
+
