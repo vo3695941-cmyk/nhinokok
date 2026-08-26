@@ -104,12 +104,13 @@ function movePlayer() {
     let currentGridX = Math.floor(player.x);
     let currentGridY = Math.floor(player.y);
 
+    // [FIXED LOGIC] Kiểm tra chuẩn xác theo tọa độ thực tế của cánh cửa
     if (player.level === 1 && currentGridX > 6) {
         initLevel(2);
-    } else if (player.level === 2 && currentGridY > 5 && currentGridY < 10) {
-        initLevel(3);
-    } else if (player.level === 3 && currentGridY > 10) {
-        initLevel(4);
+    } else if (player.level === 2 && currentGridY > 8) { 
+        initLevel(3); // Chỉ lên màn 3 khi đi lọt hẳn qua hàng số 8 xuống dưới
+    } else if (player.level === 3 && currentGridY > 10 && currentGridX > 10) { 
+        initLevel(4); // Chỉ lên màn 4 khi đi qua cửa ở góc phải dưới
     } else if (player.level === 4 && currentGridY > 13) {
         player.level = 5;
         document.getElementById('level').innerText = "5";
@@ -128,3 +129,4 @@ function movePlayer() {
         }
     });
 }
+
