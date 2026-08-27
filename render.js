@@ -61,9 +61,50 @@ function renderRaycaster() {
             ctx.save();
             for (let xOffset = -spriteWidth/2; xOffset < spriteWidth/2; xOffset++) {
                 let colX = Math.floor(monsterScreenX + xOffset);
+                
                 if (colX >= 0 && colX < width && dist < depthBuffer[colX]) {
-                    ctx.fillStyle = m.color;
-                    ctx.fillRect(colX, (height - spriteHeight) / 2, 1, spriteHeight);
+                    
+                    // [ĐÃ NÂNG CẤP THÀNH CÔNG] DỰNG TEXTURE HÌNH ẢNH GÃ LÍNH CHI TIẾT
+                    if (m.color === "soldier") {
+                        let topY = (height - spriteHeight) / 2;
+                        let isStripe = (Math.floor(colX / 5) % 2 === 0);
+                        
+                        // 1. Tầng Đầu & Mặt & Tóc (15% trên cùng)
+                        if (xOffset > -spriteWidth/6 && xOffset < spriteWidth/6) {
+                            ctx.fillStyle = `rgb(230, 160, 120)`; // Da mặt lính
+                            ctx.fillRect(colX, topY, 1, spriteHeight * 0.15);
+                            ctx.fillStyle = `rgb(90, 50, 20)`; // Tóc nâu quân đội
+                            ctx.fillRect(colX, topY, 1, spriteHeight * 0.04);
+                        } else {
+                            ctx.fillStyle = `rgb(45, 85, 45)`; // Cầu vai giáp
+                            ctx.fillRect(colX, topY + spriteHeight * 0.1, 1, spriteHeight * 0.05);
+                        }
+                        
+                        // 2. Tầng Áo giáp lính Camo rằn ri (45% tiếp theo)
+                        ctx.fillStyle = isStripe ? `rgb(35, 75, 35)` : `rgb(95, 65, 45)`;
+                        ctx.fillRect(colX, topY + spriteHeight * 0.15, 1, spriteHeight * 0.45);
+                        
+                        // Khẩu súng trường lính đang bồng trước ngực
+                        if (xOffset > -spriteWidth/4 && xOffset < spriteWidth/3) {
+                            ctx.fillStyle = `rgb(40, 40, 40)`; 
+                            ctx.fillRect(colX, topY + spriteHeight * 0.35, 1, spriteHeight * 0.08);
+                        }
+
+                        // 3. Tầng Quần Kaki dã chiến (25% tiếp theo)
+                        ctx.fillStyle = isStripe ? `rgb(85, 95, 65)` : `rgb(55, 65, 45)`;
+                        ctx.fillRect(colX, topY + spriteHeight * 0.6, 1, spriteHeight * 0.25);
+
+                        // 4. Đôi bốt chiến đấu cổ cao dưới đáy (15% dưới cùng)
+                        if (xOffset < -spriteWidth/8 || xOffset > spriteWidth/8) {
+                            ctx.fillStyle = `rgb(20, 20, 20)`; 
+                            ctx.fillRect(colX, topY + spriteHeight * 0.85, 1, spriteHeight * 0.15);
+                        }
+                        
+                    } else {
+                        ctx.fillStyle = m.color;
+                        ctx.fillRect(colX, (height - spriteHeight) / 2, 1, spriteHeight);
+                    }
+                    
                     if (m.maxHp > 1) {
                         ctx.fillStyle = "#ff0000"; ctx.fillRect(monsterScreenX - 15, (height - spriteHeight)/2 - 10, 30, 4);
                         ctx.fillStyle = "#00ff00"; ctx.fillRect(monsterScreenX - 15, (height - spriteHeight)/2 - 10, 30 * (m.hp / m.maxHp), 4);
@@ -91,8 +132,8 @@ function drawWeapon() {
 }
 
 function gameLoop() {
-    if (player.level <= 4) { 
-        movePlayer(); // Lấy từ player.js
+    if (player.level <= 6) { 
+        movePlayer(); 
         renderRaycaster(); 
         drawWeapon(); 
     }
