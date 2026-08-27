@@ -1,22 +1,23 @@
 const mapWidth = 16;
 const mapHeight = 16;
 
+// MAP UPDATE MÀN 5 & 6: Số 1 = Tường, Số 4 = Cửa chặn, Số 0 = Đường đi thoáng đạt
 let map = [
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1, // Màn 1 (Trên cùng bên trái)
     1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,4,0,0,0,0,0,0,0,0,1, // CỬA 1 (6,3) -> Mở để qua Màn 2
     1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,
-    1,0,0,0,0,0,4,0,0,0,0,0,0,0,0,1, // CỬA 1 (6,3)
-    1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,
-    1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1, // Hành lang xuống Màn 3
     1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,
     1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,
-    1,0,0,0,0,0,0,0,0,4,0,0,0,0,0,1, // CỬA 2 (9,8)
+    1,0,0,0,0,0,0,0,0,4,0,0,0,0,0,1, // CỬA 2 (9,8) -> Mở để xuống Màn 3
     1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,
-    1,1,1,1,1,1,1,1,1,1,1,1,1,4,1,1, // CỬA 3 (13,10)
+    1,1,1,1,1,1,1,1,1,1,1,1,1,4,1,1, // CỬA 3 (13,10) -> Mở để xuống Màn 4
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1, // Màn 4
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-    1,1,1,1,1,1,1,1,1,1,1,4,1,1,1,1, // CỬA 4 (11,13)
-    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,1,1,1,1,1,1,1,1,1,1,4,1,1,1,1, // CỬA 4 (11,13) -> Đi xuống Màn 5
+    1,0,0,0,0,0,0,0,0,4,0,0,0,0,0,1, // CỬA 5 (9,14) -> Rẽ trái qua Màn 6
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
 ];
 
@@ -54,6 +55,25 @@ function initLevel(lvl) {
         document.getElementById('msg-box').innerText = "MÀN 4: SIÊU BOSS CƠ KHÍ XUẤT HIỆN! Trâu 25 HP!";
         monsters = [
             { x: 11.5, y: 11.5, type: 4, hp: 25, maxHp: 25, active: true, color: "#00ffff", size: 1.5 }
+        ];
+    } else if (lvl === 5) {
+        player.x = 11.5; player.y = 14.5; 
+        document.getElementById('score').innerText = "0/11";
+        document.getElementById('msg-box').innerText = "MÀN 5: Săn lùng diệt 10 quái Xanh và 1 quái Tím!";
+        
+        monsters = [];
+        for(let i = 0; i < 10; i++) {
+            monsters.push({ x: 12 + Math.random() * 2, y: 14 + Math.random() * 1, type: 5, hp: 2, maxHp: 2, active: true, color: "#00ff55", size: 0.7 });
+        }
+        monsters.push({ x: 14.5, y: 14.5, type: 3, hp: 10, maxHp: 10, active: true, color: "#aa00ff", size: 1.1 });
+    } else if (lvl === 6) {
+        player.x = 8.5; player.y = 14.5; 
+        document.getElementById('score').innerText = "0/1";
+        document.getElementById('msg-box').innerText = "MÀN 6: ĐỐI ĐẦU QUÁI LÍNH ĐÁNH THUÊ (25 HP)! Cẩn thận mất máu!";
+        
+        // Quái lính đặc biệt mang nhãn "soldier"
+        monsters = [
+            { x: 3.5, y: 14.5, type: 6, hp: 25, maxHp: 25, active: true, color: "soldier", size: 1.2 }
         ];
     }
 }
