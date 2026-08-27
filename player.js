@@ -2,6 +2,7 @@ const player = {
     x: 2.5, y: 2.5, angle: 0, fov: Math.PI / 3,
     speed: 0.05, rotSpeed: 0.05,
     ammo: 999, score: 0, level: 1,
+    hp: 1000, maxHp: 1000, 
     shooting: false, shootFrame: 0
 };
 
@@ -81,7 +82,16 @@ function checkLevelProgress() {
     } else if (player.level === 4) {
         document.getElementById('score').innerText = player.score + "/1";
         map[13 * mapWidth + 11] = 0; 
-        document.getElementById('msg-box').innerText = "SIÊU BOSS BỊ TIÊU DIỆT! CỬA MÀN 5 ĐÃ MỞ! Tiến xuống phía dưới!";
+        document.getElementById('msg-box').innerText = "SIÊU BOSS BỊ TIÊU DIỆT! CỬA MÀN 5 ĐÃ MỞ! Tiến thẳng xuống dưới!";
+    } else if (player.level === 5) {
+        document.getElementById('score').innerText = player.score + "/11";
+        if (player.score >= 11) {
+            map[14 * mapWidth + 9] = 0; 
+            document.getElementById('msg-box').innerText = "CỬA MÀN 6 ĐÃ MỞ! Đi xuyên sang ngách bên trái để gặp QUÁI LÍNH!";
+        }
+    } else if (player.level === 6) {
+        document.getElementById('score').innerText = player.score + "/1";
+        document.getElementById('msg-box').innerText = "QUÁI LÍNH ĐÃ CHẾT! Tiến sâu về góc trái để tìm cửa qua màn!";
     }
 }
 
@@ -104,28 +114,45 @@ function movePlayer() {
     let currentGridX = Math.floor(player.x);
     let currentGridY = Math.floor(player.y);
 
-    // [ĐÃ FIX TRIỆT ĐỂ] Tăng độ nhạy vùng kích hoạt chuyển màn ngay khi đi lọt qua cửa
+    // [FIXED] PHÂN CHIA VÙNG LOGIC CHUYỂN MÀN CHUẨN XÁC, CHỐNG NHẢY CÓC HIỂN THỊ
     if (player.level === 1 && currentGridX > 6) {
         initLevel(2);
     } else if (player.level === 2 && currentGridY >= 9) { 
-        initLevel(3); // [FIXED] Vừa bước qua hàng Y=8 xuống hàng Y=9 là lập tức ăn Màn 3 luôn, không cần đâm tường!
+        initLevel(3); 
     } else if (player.level === 3 && currentGridY >= 11 && currentGridX > 10) { 
-        initLevel(4); // [FIXED] Vừa lọt qua cửa 3 xuống hàng Y=11 là ăn Màn 4 luôn!
+        initLevel(4); 
     } else if (player.level === 4 && currentGridY > 13) {
-        player.level = 5;
-        document.getElementById('level').innerText = "5";
-        document.getElementById('msg-box').innerText = "Xin lỗi đang xây thêm 🛠️";
-        alert("Xin lỗi đang xây thêm!");
+        initLevel(5); // Đi qua cửa 4 rớt xuống hàng Y=14 ➔ Kích hoạt màn 5, nạp 11 quái
+    } else if (player.level === 5 && currentGridX < 9 && map[14 * mapWidth + 9] === 0) {
+        initLevel(6); // Chỉ khi diệt sạch 11 quái Màn 5 VÀ lọt qua vách X < 9 sang bên trái ➔ Kích hoạt Màn 6 gặp Quái lính
+    } else if (player.level === 6 && currentGridX < 2) {
+        // Chỉ khi dọn sạch Quái lính ở Màn 6, đi kịch khung vách bên trái ➔ Kích hoạt Màn 7 thông báo chặn
+        player.level = 7;
+        document.getElementById('level').innerText = "7";
+        document.getElementById('msg-box').innerText = "Xin lỗi vẫn đang xây thêm 🛠️";
+        alert("Xin lỗi vẫn đang xây thêm!");
     }
 
     monsters.forEach(m => {
         if (!m.active) return;
         let mdx = player.x - m.x; let mdy = player.y - m.y;
         let dist = Math.sqrt(mdx*mdx + mdy*mdy);
+        
         let chaseSpeed = (m.type >= 3) ? 0.009 : 0.015;
         if (dist > 0.6) {
             m.x += (mdx / dist) * chaseSpeed;
             m.y += (mdy / dist) * chaseSpeed;
+        } else {
+            let damage = m.type === 6 ? 4 : m.type === 4 ? 3 : 1; 
+            player.hp = Math.max(0, player.hp - damage);
+            document.getElementById('player-hp').innerText = player.hp + "/1000";
+            
+            if (player.hp <= 0) {
+                alert("BẠN ĐÃ BỊ QUÁI VẬT THỊT! Game tự động hồi sinh!");
+                player.hp = 1000;
+                player.x = 2.5; player.y = 2.5; player.angle = 0;
+                initLevel(1);
+            }
         }
     });
 }
