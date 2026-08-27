@@ -3,10 +3,10 @@ const player = {
     speed: 0.05, rotSpeed: 0.05,
     ammo: 999, score: 0, level: 1,
     hp: 1000, maxHp: 1000, 
-    shooting: false, shootFrame: 0
+    shooting: false, shootFrame: 0,
+    isDead: false 
 };
 
-// Khởi chạy level 1
 initLevel(1);
 
 const mobileKeys = { up: false, down: false, left: false, right: false };
@@ -21,6 +21,7 @@ bindTouch('btn-left', 'left'); bindTouch('btn-right', 'right');
 
 document.getElementById('btn-shoot').addEventListener('touchstart', (e) => {
     e.preventDefault();
+    if (player.isDead) return; 
     if (!player.shooting && player.ammo > 0) {
         player.shooting = true;
         player.shootFrame = 0;
@@ -66,7 +67,7 @@ function checkLevelProgress() {
             document.getElementById('msg-box').innerText = "CỬA 1 MỞ! Rẽ phải sang hành lang bên cạnh để vào MÀN 2!";
         } else {
             setTimeout(() => {
-                if(player.level === 1) monsters.push({ x: 2 + Math.random()*3, y: 2 + Math.random()*3, type: 1, hp: 1, maxHp: 1, active: true, color: "#ff2222", size: 0.7 });
+                if(player.level === 1 && !player.isDead) monsters.push({ x: 2 + Math.random()*3, y: 2 + Math.random()*3, type: 1, hp: 1, maxHp: 1, active: true, color: "#ff2222", size: 0.7 });
             }, 1000);
         }
     } else if (player.level === 2) {
@@ -86,16 +87,19 @@ function checkLevelProgress() {
     } else if (player.level === 5) {
         document.getElementById('score').innerText = player.score + "/11";
         if (player.score >= 11) {
-            map[14 * mapWidth + 9] = 0; 
-            document.getElementById('msg-box').innerText = "CỬA MÀN 6 ĐÃ MỞ! Đi xuyên sang ngách bên trái để gặp QUÁI LÍNH!";
+            map[16 * mapWidth + 7] = 0; // [FIXED] Mở chuẩn xác Cửa 5 tại tọa độ hàng Y=16
+            document.getElementById('msg-box').innerText = "CỬA MÀN 6 ĐÃ MỞ! Đi xuyên sâu xuống ngách bên trái!";
         }
     } else if (player.level === 6) {
         document.getElementById('score').innerText = player.score + "/1";
-        document.getElementById('msg-box').innerText = "QUÁI LÍNH ĐÃ CHẾT! Tiến sâu về góc trái để tìm cửa qua màn!";
+        map[18 * mapWidth + 9] = 0; // [FIXED] Diệt xong Quái lính, mở Cửa số 6 tại tọa độ hàng Y=18
+        document.getElementById('msg-box').innerText = "QUÁI LÍNH ĐÃ CHẾT! CỬA MÀN 7 ĐÃ MỞ! Tiến thẳng xuống ô cửa cam!";
     }
 }
 
 function movePlayer() {
+    if (player.isDead) return; 
+
     let moveX = 0; let moveY = 0;
     if (mobileKeys.up) { moveX += Math.cos(player.angle); moveY += Math.sin(player.angle); }
     if (mobileKeys.down) { moveX -= Math.cos(player.angle); moveY -= Math.sin(player.angle); }
@@ -114,7 +118,7 @@ function movePlayer() {
     let currentGridX = Math.floor(player.x);
     let currentGridY = Math.floor(player.y);
 
-    // [FIXED] PHÂN CHIA VÙNG LOGIC CHUYỂN MÀN CHUẨN XÁC, CHỐNG NHẢY CÓC HIỂN THỊ
+    // [FIXED] Sửa lại mốc toạ độ chuyển giao vùng khi tăng chiều cao map lên 20 hàng
     if (player.level === 1 && currentGridX > 6) {
         initLevel(2);
     } else if (player.level === 2 && currentGridY >= 9) { 
@@ -122,16 +126,18 @@ function movePlayer() {
     } else if (player.level === 3 && currentGridY >= 11 && currentGridX > 10) { 
         initLevel(4); 
     } else if (player.level === 4 && currentGridY > 13) {
-        initLevel(5); // Đi qua cửa 4 rớt xuống hàng Y=14 ➔ Kích hoạt màn 5, nạp 11 quái
-    } else if (player.level === 5 && currentGridX < 9 && map[14 * mapWidth + 9] === 0) {
-        initLevel(6); // Chỉ khi diệt sạch 11 quái Màn 5 VÀ lọt qua vách X < 9 sang bên trái ➔ Kích hoạt Màn 6 gặp Quái lính
-    } else if (player.level === 6 && currentGridX < 2) {
-        // Chỉ khi dọn sạch Quái lính ở Màn 6, đi kịch khung vách bên trái ➔ Kích hoạt Màn 7 thông báo chặn
+        initLevel(5); 
+    } else if (player.level === 5 && currentGridY >= 17) {
+        initLevel(6); // Vượt qua hàng Y=16 lọt xuống vùng dưới -> Nạp Màn 6
+    } else if (player.level === 6 && currentGridY >= 19) {
+        // Vượt qua hàng Y=18 bước hẳn vào hàng cuối Y=19 -> Kích hoạt màn 7
         player.level = 7;
         document.getElementById('level').innerText = "7";
         document.getElementById('msg-box').innerText = "Xin lỗi vẫn đang xây thêm 🛠️";
         alert("Xin lỗi vẫn đang xây thêm!");
     }
+
+    let dynamicDeathTrigger = false;
 
     monsters.forEach(m => {
         if (!m.active) return;
@@ -148,12 +154,25 @@ function movePlayer() {
             document.getElementById('player-hp').innerText = player.hp + "/1000";
             
             if (player.hp <= 0) {
-                alert("BẠN ĐÃ BỊ QUÁI VẬT THỊT! Game tự động hồi sinh!");
-                player.hp = 1000;
-                player.x = 2.5; player.y = 2.5; player.angle = 0;
-                initLevel(1);
+                dynamicDeathTrigger = true; 
             }
         }
     });
-}
 
+    if (dynamicDeathTrigger && !player.isDead) {
+        player.isDead = true;
+        setTimeout(() => {
+            alert("BẠN ĐÃ BỊ QUÁI VẬT THỊT! Game tự động hồi sinh!");
+            player.hp = 1000;
+            player.ammo = 999;
+            player.x = 2.5; 
+            player.y = 2.5; 
+            player.angle = 0;
+            player.isDead = false;
+            document.getElementById('player-hp').innerText = "1000/1000";
+            
+            resetMapToDefault();
+            initLevel(1);
+        }, 50);
+    }
+}
