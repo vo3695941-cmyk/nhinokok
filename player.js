@@ -104,14 +104,14 @@ function movePlayer() {
     let currentGridX = Math.floor(player.x);
     let currentGridY = Math.floor(player.y);
 
-    // KIỂM TRA CHUYỂN MÀN CHUẨN XÁC: Ranh giới vùng kết hợp kiểm tra trạng thái đóng/mở cửa thực tế
+    // [ĐÃ FIX TRIỆT ĐỂ] Tăng độ nhạy vùng kích hoạt chuyển màn ngay khi đi lọt qua cửa
     if (player.level === 1 && currentGridX > 6) {
         initLevel(2);
-    } else if (player.level === 2 && currentGridY > 8 && map[8 * mapWidth + 9] === 0) { 
-        initLevel(3); // Cửa số 2 biến thành ô số 0 mới được kích hoạt Màn 3!
-    } else if (player.level === 3 && currentGridY > 10 && map[10 * mapWidth + 13] === 0) { 
-        initLevel(4); // Cửa số 3 biến thành ô số 0 mới được kích hoạt Màn 4!
-    } else if (player.level === 4 && currentGridY > 13 && map[13 * mapWidth + 11] === 0) {
+    } else if (player.level === 2 && currentGridY >= 9) { 
+        initLevel(3); // [FIXED] Vừa bước qua hàng Y=8 xuống hàng Y=9 là lập tức ăn Màn 3 luôn, không cần đâm tường!
+    } else if (player.level === 3 && currentGridY >= 11 && currentGridX > 10) { 
+        initLevel(4); // [FIXED] Vừa lọt qua cửa 3 xuống hàng Y=11 là ăn Màn 4 luôn!
+    } else if (player.level === 4 && currentGridY > 13) {
         player.level = 5;
         document.getElementById('level').innerText = "5";
         document.getElementById('msg-box').innerText = "Xin lỗi đang xây thêm 🛠️";
