@@ -3,7 +3,6 @@ const mapHeight = 20;
 
 let map = [];
 
-// Hàm khôi phục lại trạng thái bản đồ ban đầu khi mới vào game hoặc khi hồi sinh
 function resetMapToDefault() {
     map = [
         1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 
@@ -11,7 +10,7 @@ function resetMapToDefault() {
         1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1, 
         1,0,0,0,0,0,4,0,0,0,0,0,0,0,0,1, // CỬA 1 (6,3)
         1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1, 
-        1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1, // Hành lang đi xuống Màn 3
+        1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1, // Hành lang đi xuống
         1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1, // Màn 2
         1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1, 
         1,0,0,0,0,0,0,0,0,4,0,0,0,0,0,1, // CỬA 2 (9,8)
@@ -82,7 +81,7 @@ function initLevel(lvl) {
     } else if (lvl === 6) {
         player.x = 4.5; player.y = 17.5; 
         document.getElementById('score').innerText = "0/1";
-        document.getElementById('msg-box').innerText = "MÀN 6: ĐỐI ĐẦU QUÁI LÍNH ĐÁNH THUÊ (25 HP)! Cẩn thận mất máu!";
+        document.getElementById('msg-box').innerText = "MÀN 6: ĐỐI ĐẦU QUÁI LÍNH ĐÁNH THUÊ (25 HP)! Bắn nó!";
         
         monsters = [
             { x: 2.5, y: 17.5, type: 6, hp: 25, maxHp: 25, active: true, color: "soldier", size: 1.2 }
