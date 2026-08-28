@@ -64,37 +64,58 @@ function renderRaycaster() {
                 
                 if (colX >= 0 && colX < width && dist < depthBuffer[colX]) {
                     
-                    if (m.color === "soldier") {
+                    // [FIXED] DỰNG ĐỒ HỌA CHUẨN XÁC CHO CẢ QUÁI LÍNH (MÀN 6) VÀ TRÙM SÂN THƯỢNG (MÀN 7)
+                    if (m.color === "soldier" || m.color === "purple-soldier") {
                         let topY = (height - spriteHeight) / 2;
                         let isStripe = (Math.floor(colX / 5) % 2 === 0);
                         
+                        // 1. Tầng Đầu & Mặt & Tóc (15% trên cùng)
                         if (xOffset > -spriteWidth/6 && xOffset < spriteWidth/6) {
-                            ctx.fillStyle = `rgb(230, 160, 120)`; 
+                            ctx.fillStyle = `rgb(230, 160, 120)`; // Da mặt lính
                             ctx.fillRect(colX, topY, 1, spriteHeight * 0.15);
-                            ctx.fillStyle = `rgb(90, 50, 20)`; 
+                            ctx.fillStyle = `rgb(90, 50, 20)`; // Tóc nâu quân đội
                             ctx.fillRect(colX, topY, 1, spriteHeight * 0.04);
                         } else {
-                            ctx.fillStyle = `rgb(45, 85, 45)`; 
+                            // Cầu vai giáp (Quái lính Màn 6 màu xanh rêu, Boss Màn 7 màu tím đậm)
+                            ctx.fillStyle = (m.color === "purple-soldier") ? `rgb(90, 20, 130)` : `rgb(45, 85, 45)`;
                             ctx.fillRect(colX, topY + spriteHeight * 0.1, 1, spriteHeight * 0.05);
                         }
                         
-                        ctx.fillStyle = isStripe ? `rgb(35, 75, 35)` : `rgb(95, 65, 45)`;
+                        // 2. Tầng Áo giáp Camo rằn ri (45% tiếp theo)
+                        if (m.type === 7 && m.shield) {
+                            // Nếu Boss Màn 7 đang bật khiên ➔ Đổi sang màu Hồng Neon Phản Quang rực rỡ để bro biết ngưng bắn
+                            ctx.fillStyle = `rgb(255, 0, 128)`; 
+                        } else if (m.color === "purple-soldier") {
+                            // Áo giáp rằn ri màu Tím của Boss Sân Thượng
+                            ctx.fillStyle = isStripe ? `rgb(110, 30, 150)` : `rgb(60, 20, 90)`;
+                        } else {
+                            // Áo giáp rằn ri màu Xanh của Lính Màn 6
+                            ctx.fillStyle = isStripe ? `rgb(35, 75, 35)` : `rgb(95, 65, 45)`;
+                        }
                         ctx.fillRect(colX, topY + spriteHeight * 0.15, 1, spriteHeight * 0.45);
                         
+                        // Khẩu súng trường bồng trước ngực
                         if (xOffset > -spriteWidth/4 && xOffset < spriteWidth/3) {
                             ctx.fillStyle = `rgb(40, 40, 40)`; 
                             ctx.fillRect(colX, topY + spriteHeight * 0.35, 1, spriteHeight * 0.08);
                         }
 
-                        ctx.fillStyle = isStripe ? `rgb(85, 95, 65)` : `rgb(55, 65, 45)`;
+                        // 3. Tầng Quần Kaki dã chiến (25% tiếp theo)
+                        if (m.color === "purple-soldier") {
+                            ctx.fillStyle = isStripe ? `rgb(130, 50, 180)` : `rgb(50, 15, 80)`;
+                        } else {
+                            ctx.fillStyle = isStripe ? `rgb(85, 95, 65)` : `rgb(55, 65, 45)`;
+                        }
                         ctx.fillRect(colX, topY + spriteHeight * 0.6, 1, spriteHeight * 0.25);
 
+                        // 4. Đôi bốt chiến đấu cổ cao dưới đáy (15% dưới cùng)
                         if (xOffset < -spriteWidth/8 || xOffset > spriteWidth/8) {
                             ctx.fillStyle = `rgb(20, 20, 20)`; 
                             ctx.fillRect(colX, topY + spriteHeight * 0.85, 1, spriteHeight * 0.15);
                         }
                         
                     } else {
+                        // Các quái vật màu trơn thông thường
                         ctx.fillStyle = m.color;
                         ctx.fillRect(colX, (height - spriteHeight) / 2, 1, spriteHeight);
                     }
@@ -126,7 +147,7 @@ function drawWeapon() {
 }
 
 function gameLoop() {
-    if (player.level <= 6) { 
+    if (player.level <= 7) { // Cho phép vòng lặp chạy đến hết màn 7
         movePlayer(); 
         renderRaycaster(); 
         drawWeapon(); 
