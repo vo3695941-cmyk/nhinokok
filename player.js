@@ -41,14 +41,28 @@ document.getElementById('btn-shoot').addEventListener('touchstart', (e) => {
                 let screenX = Math.floor((640 / 2) + (diffAngle * (640 / player.fov)));
                 
                 if (screenX >= 0 && screenX < 640 && dist < depthBuffer[screenX]) {
+                    
+                    // [CƠ CHẾ MỚI MÀN 7] Nếu bắn trúng Boss lúc đang bật khiên -> Đạn nảy, không mất máu!
+                    if (m.type === 7 && m.shield) {
+                        return; // Thoát ra luôn, không trừ HP của Boss
+                    }
+
                     m.hp--;
                     if (m.hp <= 0) {
                         m.active = false;
-                        player.score++;
-                        checkLevelProgress();
+                        if (m.type === 7 || m.type === 6 || m.type === 4 || m.type === 3 || m.type === 2) {
+                            player.score++; // Chỉ tính điểm diệt địch cốt lõi qua màn cho các mục tiêu chính
+                            checkLevelProgress();
+                        } else if (player.level === 5 || player.level === 1) {
+                            player.score++; // Tính điểm cho quái thường ở màn gom số lượng
+                            checkLevelProgress();
+                        }
                     } else {
-                        m.x -= Math.cos(angleToMonster) * 0.08;
-                        m.y -= Math.sin(angleToMonster) * 0.08;
+                        // Boss Màn 7 đứng im một chỗ, các quái khác mới bị giật lùi khi trúng đạn
+                        if (m.type !== 7) {
+                            m.x -= Math.cos(angleToMonster) * 0.08;
+                            m.y -= Math.sin(angleToMonster) * 0.08;
+                        }
                     }
                 }
             }
@@ -86,7 +100,13 @@ function checkLevelProgress() {
     } else if (player.level === 6) {
         document.getElementById('score').innerText = player.score + "/1";
         map[18 * mapWidth + 9] = 0; 
-        document.getElementById('msg-box').innerText = "QUÁI LÍNH ĐÃ CHẾT! CỬA MÀN 7 ĐÃ MỞ! Tiến thẳng xuống ô cửa cam!";
+        document.getElementById('msg-box').innerText = "QUÁI LÍNH ĐÃ CHẾT! CỬA MÀN 7 ĐÃ MỞ! Đi xuống hành lang cầu thang bên phải!";
+    } else if (player.level === 7) {
+        document.getElementById('score').innerText = player.score + "/1";
+        map[22 * mapWidth + 11] = 0; // Diệt xong Boss sân thượng, mở Cửa số 7 thông xuống Màn 8
+        if (bossShieldTimer) clearInterval(bossShieldTimer);
+        if (bossSummonTimer) clearInterval(bossSummonTimer);
+        document.getElementById('msg-box').innerText = "🔥 ĐÃ TIÊU DIỆT TRÙM SÂN THƯỢNG! Cửa dẫn xuống MÀN 8 đã mở toang!";
     }
 }
 
@@ -109,6 +129,7 @@ function movePlayer() {
     let currentGridX = Math.floor(player.x);
     let currentGridY = Math.floor(player.y);
 
+    // Kích hoạt nạp màn uốn lượn uốn khúc theo chiều cao 24 hàng
     if (player.level === 1 && currentGridX > 6) {
         initLevel(2);
     } else if (player.level === 2 && currentGridY >= 9) { 
@@ -119,16 +140,19 @@ function movePlayer() {
         initLevel(5); 
     } else if (player.level === 5 && currentGridY >= 17) {
         initLevel(6); 
-    } else if (player.level === 6 && currentGridY >= 19) {
-        player.level = 7;
-        document.getElementById('level').innerText = "7";
+    } else if (player.level === 6 && currentGridY >= 20) {
+        initLevel(7); // Bước chân qua khỏi lối cầu thang xuống hàng Y=20 ➔ Lên Sân thượng Màn 7
+    } else if (player.level === 7 && currentGridY > 22) {
+        // Vượt qua cửa số 7 lọt xuống hàng Y=23 ➔ Chạm rìa Màn 8 và dội bảng cảnh báo chặn đứng
+        player.level = 8;
+        document.getElementById('level').innerText = "8";
         document.getElementById('msg-box').innerText = "Xin lỗi vẫn đang xây thêm 🛠️";
         alert("Xin lỗi vẫn đang xây thêm!");
     }
 
-    // AI Quái vật đuổi theo. Chặn phép chia dist = 0 an toàn để tuyệt đối KHÔNG bao giờ bị đóng băng máy!
+    // AI Quái vật dịch chuyển đuổi theo. Riêng Boss Màn 7 (type: 7) đứng im một chỗ!
     monsters.forEach(m => {
-        if (!m.active) return;
+        if (!m.active || m.type === 7) return; 
         let mdx = player.x - m.x; let mdy = player.y - m.y;
         let dist = Math.sqrt(mdx*mdx + mdy*mdy);
         
